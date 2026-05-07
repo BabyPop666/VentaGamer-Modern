@@ -1,17 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { addItem } from "../features/cart/cart.api";
 import { getCategories, getProducts } from "../features/products/product.api";
 import { useAuthStore } from "../features/auth/auth.store";
 import { toApiError } from "../lib/api";
+import { Button } from "../components/ui/Button";
+import { Chip } from "../components/ui/Chip";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Lightbox } from "../components/ui/Lightbox";
+import { PageHeader } from "../components/ui/PageHeader";
+import { ProductImage } from "../components/ui/ProductImage";
+import { Spinner } from "../components/ui/Spinner";
+import { Toast } from "../components/ui/Toast";
+import { productImage } from "../lib/productImage";
 
 export function CatalogPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category") ?? undefined;
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<string | undefined>(initialCategory);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [zoom, setZoom] = useState<{ src: string; caption: string } | null>(null);
 
   const user = useAuthStore((s) => s.user);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -22,7 +35,7 @@ export function CatalogPage() {
     mutationFn: ({ productId }: { productId: number }) => addItem(productId, 1),
     onSuccess: (cart) => {
       queryClient.setQueryData(["cart"], cart);
-      setFeedback({ ok: true, msg: "Agregado al carrito" });
+      setFeedback({ ok: true, msg: "Loot agregado al inventario" });
       setTimeout(() => setFeedback(null), 2500);
     },
     onError: (err) => {
@@ -32,12 +45,22 @@ export function CatalogPage() {
   });
 
   function handleAddToCart(productId: number) {
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (!hasPermission("cart.use")) {
       setFeedback({ ok: false, msg: "Tu rol no puede comprar" });
       return;
     }
     addMut.mutate({ productId });
+  }
+
+  function applyCategory(c: string | undefined) {
+    setPage(1);
+    setCategory(c);
+    if (c) setSearchParams({ category: c });
+    else setSearchParams({});
   }
 
   const productsQuery = useQuery({
@@ -53,141 +76,228 @@ export function CatalogPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-900">Catalogo</h1>
-          <p className="text-sm text-slate-500">
-            {productsQuery.data?.totalItems ?? "..."} productos disponibles
-          </p>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="// CATALOGO"
+        title="Arsenal disponible"
+        subtitle={
+          productsQuery.data
+            ? `${productsQuery.data.totalItems} items detectados en el sistema`
+            : "Sincronizando inventario..."
+        }
+      />
+
+      {/* Search bar */}
+      <form
+        className="flex flex-wrap gap-3 items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setPage(1);
+          setSearch(searchInput.trim());
+        }}
+      >
+        <div className="flex-1 min-w-[260px]">
+          <label className="label">Búsqueda</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-cyan font-mono text-sm pointer-events-none">
+              ⌕
+            </span>
+            <input
+              placeholder="Buscar producto..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="input !pl-9"
+            />
+          </div>
         </div>
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPage(1);
-            setSearch(searchInput.trim());
-          }}
-        >
-          <input
-            placeholder="Buscar..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="border border-slate-300 rounded px-3 py-2 text-sm w-64"
-          />
+        <div className="min-w-[200px]">
+          <label className="label">Categoría</label>
           <select
             value={category ?? ""}
-            onChange={(e) => {
-              setPage(1);
-              setCategory(e.target.value || undefined);
-            }}
-            className="border border-slate-300 rounded px-3 py-2 text-sm"
+            onChange={(e) => applyCategory(e.target.value || undefined)}
+            className="input"
           >
-            <option value="">Todas las categorias</option>
+            <option value="">Todas</option>
             {categoriesQuery.data?.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
             ))}
           </select>
-          <button className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded text-sm">
-            Buscar
-          </button>
-        </form>
-      </div>
+        </div>
+        <Button variant="primary" type="submit">
+          ▶ Buscar
+        </Button>
+        {(search || category) && (
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setSearchInput("");
+              applyCategory(undefined);
+            }}
+          >
+            Limpiar
+          </Button>
+        )}
+      </form>
 
-      {feedback && (
-        <div
-          className={`fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-sm z-20 ${
-            feedback.ok
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          {feedback.msg}
+      {/* Active filter chips */}
+      {(search || category) && (
+        <div className="flex flex-wrap gap-2">
+          {search && <Chip tone="cyan">QUERY · {search}</Chip>}
+          {category && <Chip tone="magenta">CAT · {category}</Chip>}
         </div>
       )}
 
-      {productsQuery.isLoading && <p className="text-slate-500">Cargando...</p>}
+      {feedback && <Toast tone={feedback.ok ? "success" : "error"} message={feedback.msg} />}
+
+      {productsQuery.isLoading && (
+        <div className="py-16 flex justify-center">
+          <Spinner label="cargando_inventario" />
+        </div>
+      )}
 
       {productsQuery.isError && (
-        <p className="text-red-600">Error al cargar productos.</p>
+        <EmptyState
+          icon="⚠"
+          title="Error de conexión"
+          description="No se pudo cargar el catálogo. Probá de nuevo en unos segundos."
+        />
       )}
 
       {productsQuery.data && productsQuery.data.items.length === 0 && (
-        <p className="text-slate-500 text-center py-12">
-          No hay productos con esos filtros.
-        </p>
+        <EmptyState
+          icon="∅"
+          title="Sin resultados"
+          description="No hay productos que coincidan con esos filtros. Probá relajar la búsqueda."
+        />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {productsQuery.data?.items.map((p) => (
-          <article
-            key={p.id}
-            className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
-          >
-            {p.imageUrl && (
-              <img
-                src={p.imageUrl}
-                alt={p.title}
-                loading="lazy"
-                className="w-full aspect-square object-cover"
-              />
-            )}
-            <div className="p-3">
-              <span className="text-xs text-brand-700 font-medium">
-                {p.category}
-              </span>
-              <h3 className="font-semibold mt-1 line-clamp-2">{p.title}</h3>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-lg font-bold text-brand-900">
-                  ${p.price.toFixed(2)}
-                </span>
-                <span
-                  className={`text-xs ${
-                    p.stock > 0 ? "text-green-700" : "text-red-600"
-                  }`}
-                >
-                  {p.stock > 0 ? `${p.stock} en stock` : "Sin stock"}
-                </span>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger">
+        {productsQuery.data?.items.map((p) => {
+          const outOfStock = p.stock === 0;
+          const lowStock = p.stock > 0 && p.stock < 5;
+          return (
+            <article
+              key={p.id}
+              className="panel corners group flex flex-col overflow-hidden"
+              style={{ padding: 0 }}
+            >
               <button
-                disabled={p.stock === 0 || addMut.isPending}
-                onClick={() => handleAddToCart(p.id)}
-                className="w-full mt-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white py-1.5 rounded text-sm font-medium"
+                type="button"
+                onClick={() =>
+                  setZoom({ src: productImage(p.imageUrl, p.category), caption: p.title })
+                }
+                className="aspect-[4/3] relative overflow-hidden bg-ink-800 block w-full text-left cursor-zoom-in"
+                aria-label={`Ver imagen de ${p.title}`}
               >
-                Agregar al carrito
+                <ProductImage
+                  imageUrl={p.imageUrl}
+                  category={p.category}
+                  alt={p.title}
+                  className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${
+                    outOfStock ? "grayscale" : ""
+                  }`}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink-900/90 via-ink-900/30 to-transparent pointer-events-none" />
+                {!outOfStock && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity bg-ink-900/40"
+                  >
+                    <span className="px-3 py-1.5 border border-neon-cyan bg-ink-900/80 text-neon-cyan font-display text-xs tracking-widest2 uppercase shadow-glow-soft">
+                      ⤢ ZOOM
+                    </span>
+                  </span>
+                )}
+                <Chip className="absolute top-3 left-3" tone="cyan">
+                  {p.category}
+                </Chip>
+                {outOfStock && (
+                  <div className="absolute inset-0 grid place-items-center bg-ink-900/70">
+                    <div className="font-display font-black text-neon-red text-2xl tracking-widest2">
+                      SIN STOCK
+                    </div>
+                  </div>
+                )}
+                {lowStock && !outOfStock && (
+                  <Chip className="absolute top-3 right-3" tone="magenta">
+                    LOW · {p.stock}
+                  </Chip>
+                )}
+                <div className="absolute bottom-3 left-3 right-3 font-mono text-[0.6rem] uppercase tracking-widest2 text-fg-muted flex justify-between pointer-events-none">
+                  <span>SKU.{p.id.toString().padStart(5, "0")}</span>
+                  <span className={p.stock > 0 ? "text-neon-green" : "text-neon-red"}>
+                    {p.stock > 0 ? `STK ${p.stock}` : "OFFLINE"}
+                  </span>
+                </div>
               </button>
-            </div>
-          </article>
-        ))}
+
+              <div className="p-4 flex flex-col gap-3 flex-1">
+                <h3 className="font-display font-semibold text-base line-clamp-2 group-hover:text-neon-cyan transition-colors min-h-[2.5em]">
+                  {p.title}
+                </h3>
+
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="font-mono text-[0.6rem] uppercase tracking-widest2 text-fg-dim">
+                      PRICE
+                    </div>
+                    <div className="font-display font-bold text-2xl text-neon-cyan text-glow-cyan">
+                      ${p.price.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant={outOfStock ? "ghost" : "primary"}
+                  disabled={outOfStock || addMut.isPending}
+                  onClick={() => handleAddToCart(p.id)}
+                  className="!w-full mt-auto"
+                >
+                  {outOfStock ? "AGOTADO" : "+ AÑADIR"}
+                </Button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {productsQuery.data && productsQuery.data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <button
+        <div className="flex items-center justify-center gap-3 pt-6 font-mono text-xs uppercase tracking-widest2">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 rounded border border-slate-300 disabled:opacity-40"
           >
-            Anterior
-          </button>
-          <span className="text-sm text-slate-600">
-            {page} / {productsQuery.data.totalPages}
+            ← prev
+          </Button>
+          <span className="text-neon-cyan">
+            PAGE {page.toString().padStart(2, "0")} / {productsQuery.data.totalPages.toString().padStart(2, "0")}
           </span>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() =>
-              setPage((p) =>
-                Math.min(productsQuery.data!.totalPages, p + 1)
-              )
+              setPage((p) => Math.min(productsQuery.data!.totalPages, p + 1))
             }
             disabled={page === productsQuery.data.totalPages}
-            className="px-3 py-1 rounded border border-slate-300 disabled:opacity-40"
           >
-            Siguiente
-          </button>
+            next →
+          </Button>
         </div>
       )}
+
+      <Lightbox
+        open={!!zoom}
+        src={zoom?.src ?? null}
+        caption={zoom?.caption}
+        alt={zoom?.caption}
+        onClose={() => setZoom(null)}
+      />
     </div>
   );
 }

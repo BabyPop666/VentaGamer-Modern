@@ -3,6 +3,13 @@ import { useState } from "react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../features/auth/auth.store";
 import { toApiError } from "../lib/api";
+import { Button } from "../components/ui/Button";
+import { Chip } from "../components/ui/Chip";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Panel } from "../components/ui/Panel";
+import { Spinner } from "../components/ui/Spinner";
+import { StatTile } from "../components/ui/StatTile";
 
 type BackupFile = {
   fileName: string;
@@ -28,140 +35,223 @@ export function MaintenancePage() {
   const qc = useQueryClient();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const [error, setError] = useState<string | null>(null);
-  const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
+  const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(
+    null
+  );
 
   const canBackup = hasPermission("backup.manage");
   const canIntegrity = hasPermission("integrity.check");
 
   if (!canBackup && !canIntegrity) {
-    return <p className="text-red-600">No tenes permisos para esta pagina.</p>;
+    return (
+      <EmptyState
+        icon="⊘"
+        title="Acceso restringido"
+        description="No tenés permisos para acceder a mantenimiento."
+      />
+    );
   }
 
   const backupsQ = useQuery({
     queryKey: ["backups"],
-    queryFn: async () => (await api.get<BackupFile[]>("/maintenance/backups")).data,
+    queryFn: async () =>
+      (await api.get<BackupFile[]>("/maintenance/backups")).data,
     enabled: canBackup,
   });
 
   const createBackupMut = useMutation({
-    mutationFn: async () => (await api.post<BackupFile>("/maintenance/backup")).data,
+    mutationFn: async () =>
+      (await api.post<BackupFile>("/maintenance/backup")).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["backups"] }),
     onError: (err) => setError(toApiError(err).message),
   });
 
   const checkIntegrityMut = useMutation({
-    mutationFn: async () => (await api.get<IntegrityReport>("/maintenance/integrity")).data,
+    mutationFn: async () =>
+      (await api.get<IntegrityReport>("/maintenance/integrity")).data,
     onSuccess: (data) => setIntegrityReport(data),
     onError: (err) => setError(toApiError(err).message),
   });
 
+  const totalSize =
+    backupsQ.data?.reduce((s, b) => s + b.sizeBytes, 0) ?? 0;
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-900">Mantenimiento</h1>
+      <PageHeader
+        eyebrow="// SYSTEM_MAINTENANCE"
+        title="Mantenimiento"
+        subtitle="Backups · Integridad · Operaciones críticas del sistema"
+      />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-          {error}
-          <button className="ml-2" onClick={() => setError(null)}>x</button>
+        <div className="border border-neon-red/60 bg-neon-red/5 px-4 py-2 font-mono text-xs text-neon-red flex items-center justify-between">
+          <span>&gt; {error}</span>
+          <button onClick={() => setError(null)}>✕</button>
         </div>
       )}
 
       {canBackup && (
-        <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Backups de la BD</h2>
-            <button
+        <Panel padding="lg" className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="font-mono text-[0.65rem] uppercase tracking-widest2 text-neon-cyan">
+                // BACKUP_CONTROLLER
+              </div>
+              <h2 className="h-display text-2xl">Backups de la BD</h2>
+            </div>
+            <Button
+              variant="primary"
+              loading={createBackupMut.isPending}
               onClick={() => createBackupMut.mutate()}
-              disabled={createBackupMut.isPending}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-4 py-2 rounded text-sm"
             >
-              {createBackupMut.isPending ? "Creando..." : "Crear backup"}
-            </button>
+              {createBackupMut.isPending ? "GENERANDO..." : "▶ CREAR BACKUP"}
+            </Button>
           </div>
 
-          {backupsQ.isLoading && <p>Cargando...</p>}
-          {backupsQ.data && backupsQ.data.length === 0 && (
-            <p className="text-slate-500 text-sm">No hay backups todavia.</p>
-          )}
+          {backupsQ.isLoading && <Spinner label="cargando_backups" />}
 
           {backupsQ.data && backupsQ.data.length > 0 && (
-            <table className="w-full text-sm">
-              <thead className="text-xs text-slate-500">
-                <tr>
-                  <th className="text-left p-2">Archivo</th>
-                  <th className="text-right p-2">Tamano</th>
-                  <th className="text-left p-2">Fecha (UTC)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {backupsQ.data.map((b) => (
-                  <tr key={b.filePath}>
-                    <td className="p-2 font-mono text-xs">{b.fileName}</td>
-                    <td className="p-2 text-right">{(b.sizeBytes / 1024).toFixed(1)} KB</td>
-                    <td className="p-2 text-xs">
-                      {new Date(b.createdAtUtc).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <StatTile label="Backups" value={backupsQ.data.length} />
+                <StatTile
+                  label="Volumen total"
+                  value={`${(totalSize / 1024 / 1024).toFixed(1)} MB`}
+                  tone="magenta"
+                />
+                <StatTile
+                  label="Último"
+                  value={
+                    new Date(backupsQ.data[0].createdAtUtc).toLocaleDateString()
+                  }
+                  tone="green"
+                  hint={new Date(backupsQ.data[0].createdAtUtc).toLocaleTimeString()}
+                />
+              </div>
+
+              <Panel padding="none" className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="table-cyber">
+                    <thead>
+                      <tr>
+                        <th>Archivo</th>
+                        <th className="text-right">Tamaño</th>
+                        <th>Fecha (UTC)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {backupsQ.data.map((b) => (
+                        <tr key={b.filePath}>
+                          <td className="font-mono text-xs text-neon-cyan break-all">
+                            {b.fileName}
+                          </td>
+                          <td className="text-right font-mono text-xs">
+                            {(b.sizeBytes / 1024).toFixed(1)} KB
+                          </td>
+                          <td className="font-mono text-xs text-fg-muted">
+                            {new Date(b.createdAtUtc).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Panel>
+            </>
           )}
-          <p className="text-xs text-slate-400">
-            Los backups se guardan dentro del contenedor SQL Server en{" "}
-            <code className="bg-slate-100 px-1 rounded">/var/opt/mssql/data/backups</code>.
+
+          {backupsQ.data && backupsQ.data.length === 0 && (
+            <p className="font-mono text-xs text-fg-muted">
+              [empty] No hay backups generados todavía.
+            </p>
+          )}
+
+          <p className="font-mono text-[0.65rem] text-fg-dim border-t border-line pt-3">
+            STORAGE ::{" "}
+            <code className="text-neon-cyan">/var/opt/mssql/data/backups</code>{" "}
+            · contenedor SQL Server
           </p>
-        </section>
+        </Panel>
       )}
 
       {canIntegrity && (
-        <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Integridad (HMAC-SHA256)</h2>
-            <button
+        <Panel padding="lg" className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="font-mono text-[0.65rem] uppercase tracking-widest2 text-neon-magenta">
+                // INTEGRITY_CHECK
+              </div>
+              <h2 className="h-display text-2xl">Integridad HMAC-SHA256</h2>
+            </div>
+            <Button
+              variant="magenta"
+              loading={checkIntegrityMut.isPending}
               onClick={() => checkIntegrityMut.mutate()}
-              disabled={checkIntegrityMut.isPending}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-4 py-2 rounded text-sm"
             >
-              {checkIntegrityMut.isPending ? "Verificando..." : "Verificar ahora"}
-            </button>
+              {checkIntegrityMut.isPending ? "VERIFICANDO..." : "▶ EJECUTAR CHECK"}
+            </Button>
           </div>
 
-          {integrityReport && (
-            <div className="bg-slate-50 border border-slate-200 rounded p-4 text-sm space-y-1">
-              <p>
-                <span className="text-slate-500">Calculado:</span>{" "}
-                <span className="font-mono">{integrityReport.computedAtUtc}</span>
-              </p>
-              <p>
-                <span className="text-slate-500">Filas verificadas:</span>{" "}
-                <b>{integrityReport.totalRowsChecked}</b>
-              </p>
-              <p>
-                <span className="text-slate-500">Discrepancias:</span>{" "}
-                <b
-                  className={
-                    integrityReport.mismatches === 0 ? "text-green-700" : "text-red-700"
+          {integrityReport ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <StatTile
+                  label="Filas verificadas"
+                  value={integrityReport.totalRowsChecked}
+                />
+                <StatTile
+                  label="Discrepancias"
+                  value={integrityReport.mismatches}
+                  tone={integrityReport.mismatches === 0 ? "green" : "red"}
+                />
+                <StatTile
+                  label="Calculado"
+                  value={
+                    new Date(integrityReport.computedAtUtc).toLocaleTimeString()
                   }
-                >
-                  {integrityReport.mismatches}
-                </b>
-              </p>
-              {integrityReport.findings.length > 0 && (
-                <ul className="mt-2 text-xs">
-                  {integrityReport.findings.map((f, i) => (
-                    <li key={i} className="text-red-600">
-                      [{f.table}] row {f.rowId}: {f.reason}
-                    </li>
-                  ))}
-                </ul>
+                  tone="magenta"
+                  hint={new Date(integrityReport.computedAtUtc)
+                    .toISOString()
+                    .slice(0, 10)}
+                />
+              </div>
+
+              {integrityReport.mismatches === 0 ? (
+                <div className="border border-neon-green/40 bg-neon-green/5 px-4 py-3 font-mono text-sm text-neon-green flex items-center gap-3">
+                  <span className="text-lg">✓</span>
+                  <span>SYSTEM INTEGRITY OK · Sin alteraciones detectadas.</span>
+                </div>
+              ) : (
+                <Panel padding="md">
+                  <div className="font-mono text-[0.65rem] uppercase tracking-widest2 text-neon-red mb-2">
+                    [!] HALLAZGOS DETECTADOS
+                  </div>
+                  <ul className="space-y-1 font-mono text-xs">
+                    {integrityReport.findings.map((f, i) => (
+                      <li key={i} className="text-neon-red">
+                        <Chip tone="red" className="mr-2">
+                          {f.table}
+                        </Chip>
+                        row #{f.rowId} — {f.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </Panel>
               )}
-            </div>
+            </>
+          ) : (
+            <p className="font-mono text-xs text-fg-muted">
+              [idle] Ejecutá el check para verificar la firma HMAC-SHA256 de las
+              filas críticas.
+            </p>
           )}
 
-          <p className="text-xs text-slate-400">
-            Reemplaza el sistema legacy DVH/DVV por HMAC-SHA256 estandar de la industria.
+          <p className="font-mono text-[0.65rem] text-fg-dim border-t border-line pt-3">
+            ALG :: <code className="text-neon-magenta">HMAC-SHA256</code> ·
+            reemplaza el sistema legacy DVH/DVV
           </p>
-        </section>
+        </Panel>
       )}
     </div>
   );

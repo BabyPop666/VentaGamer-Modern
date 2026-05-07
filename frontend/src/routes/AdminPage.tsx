@@ -13,6 +13,14 @@ import {
 } from "../features/admin/admin.api";
 import { useAuthStore } from "../features/auth/auth.store";
 import { toApiError } from "../lib/api";
+import { Button } from "../components/ui/Button";
+import { Chip } from "../components/ui/Chip";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Field } from "../components/ui/Field";
+import { Modal } from "../components/ui/Modal";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Panel } from "../components/ui/Panel";
+import { Spinner } from "../components/ui/Spinner";
 
 type Tab = "roles" | "users";
 
@@ -21,30 +29,36 @@ export function AdminPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
 
   if (!hasPermission("roles.read") && !hasPermission("users.register")) {
-    return <p className="text-red-600">No tenes permisos para esta pagina.</p>;
+    return (
+      <EmptyState
+        icon="⊘"
+        title="Acceso restringido"
+        description="No tenés permisos para acceder a la consola de administración."
+      />
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-900">Administracion</h1>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="// CONSOLA_ADMIN"
+        title="Administración"
+        subtitle="Roles, permisos y usuarios del sistema"
+      />
 
-      <div className="border-b border-slate-200 flex gap-1">
+      <div className="border-b border-line flex gap-1">
         {hasPermission("roles.read") && (
           <button
             onClick={() => setTab("roles")}
-            className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-              tab === "roles" ? "border-brand-600 text-brand-700 font-semibold" : "border-transparent text-slate-500"
-            }`}
+            className={`tab ${tab === "roles" ? "tab-active" : ""}`}
           >
-            Roles y permisos
+            Roles · Permisos
           </button>
         )}
         {hasPermission("users.register") && (
           <button
             onClick={() => setTab("users")}
-            className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-              tab === "users" ? "border-brand-600 text-brand-700 font-semibold" : "border-transparent text-slate-500"
-            }`}
+            className={`tab ${tab === "users" ? "tab-active" : ""}`}
           >
             Usuarios
           </button>
@@ -73,77 +87,87 @@ function RolesTab() {
     onError: (err) => setError(toApiError(err).message),
   });
 
-  if (rolesQ.isLoading || permsQ.isLoading) return <p>Cargando...</p>;
-  if (!rolesQ.data || !permsQ.data) return <p className="text-red-600">Error</p>;
+  if (rolesQ.isLoading || permsQ.isLoading) return <Spinner />;
+  if (!rolesQ.data || !permsQ.data)
+    return <EmptyState icon="⚠" title="Error al cargar" />;
 
   return (
     <div className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-          {error}
-          <button className="ml-2" onClick={() => setError(null)}>x</button>
+        <div className="border border-neon-red/60 bg-neon-red/5 px-4 py-2 font-mono text-xs text-neon-red flex items-center justify-between">
+          <span>&gt; {error}</span>
+          <button onClick={() => setError(null)}>✕</button>
         </div>
       )}
 
-      {canWrite && (
-        <button
-          onClick={() => setCreating(true)}
-          className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded text-sm"
-        >
-          + Nuevo rol
-        </button>
-      )}
+      <div className="flex justify-between items-center">
+        <p className="font-mono text-xs text-fg-muted">
+          {rolesQ.data.length} roles configurados
+        </p>
+        {canWrite && (
+          <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
+            + Nuevo rol
+          </Button>
+        )}
+      </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
+      <div className="grid md:grid-cols-2 gap-3">
         {rolesQ.data.map((role) => (
-          <div key={role.id} className="p-4">
-            <div className="flex items-center justify-between">
+          <Panel key={role.id} corners padding="md" className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="font-semibold">{role.name}</h3>
-                <p className="text-xs text-slate-500">{role.description}</p>
+                <h3 className="font-display font-bold text-lg">{role.name}</h3>
+                {role.description && (
+                  <p className="text-fg-muted text-sm">{role.description}</p>
+                )}
               </div>
               {canWrite && (
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-1 text-right">
                   <button
                     onClick={() => setEditing(role)}
-                    className="text-sm text-brand-600 hover:underline"
+                    className="font-mono text-[0.65rem] uppercase tracking-widest2 text-neon-cyan hover:text-glow-cyan"
                   >
-                    Editar
+                    [editar]
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm(`Eliminar rol "${role.name}"?`)) delMut.mutate(role.id);
+                      if (confirm(`Eliminar rol "${role.name}"?`))
+                        delMut.mutate(role.id);
                     }}
-                    className="text-sm text-red-600 hover:underline"
+                    className="font-mono text-[0.65rem] uppercase tracking-widest2 text-neon-red hover:text-glow-magenta"
                   >
-                    Eliminar
+                    [eliminar]
                   </button>
                 </div>
               )}
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
+
+            <div className="flex flex-wrap gap-1">
               {role.permissionIds.map((pid) => {
                 const p = permsQ.data!.find((x) => x.id === pid);
                 return p ? (
-                  <span key={pid} className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded">
+                  <Chip key={pid} tone="cyan">
                     {p.code}
-                  </span>
+                  </Chip>
                 ) : null;
               })}
               {role.permissionIds.length === 0 && (
-                <span className="text-xs text-slate-400">(sin permisos)</span>
+                <span className="font-mono text-xs text-fg-dim">
+                  (sin permisos)
+                </span>
               )}
             </div>
+
             {role.parentRoleIds.length > 0 && (
-              <p className="text-xs text-slate-500 mt-2">
-                Hereda de:{" "}
+              <div className="font-mono text-xs text-fg-muted border-t border-line pt-2">
+                <span className="text-neon-magenta">↳ HEREDA:</span>{" "}
                 {role.parentRoleIds
                   .map((pid) => rolesQ.data!.find((r) => r.id === pid)?.name)
                   .filter(Boolean)
-                  .join(", ")}
-              </p>
+                  .join(" · ")}
+              </div>
             )}
-          </div>
+          </Panel>
         ))}
       </div>
 
@@ -152,8 +176,15 @@ function RolesTab() {
           role={editing}
           allRoles={rolesQ.data}
           allPermissions={permsQ.data}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSaved={() => { setCreating(false); setEditing(null); qc.invalidateQueries({ queryKey: ["roles"] }); }}
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+          onSaved={() => {
+            setCreating(false);
+            setEditing(null);
+            qc.invalidateQueries({ queryKey: ["roles"] });
+          }}
           onError={setError}
         />
       )}
@@ -179,15 +210,29 @@ function RoleEditor({
   const isEdit = !!role;
   const [name, setName] = useState(role?.name ?? "");
   const [description, setDescription] = useState(role?.description ?? "");
-  const [permIds, setPermIds] = useState<Set<number>>(new Set(role?.permissionIds ?? []));
-  const [parentIds, setParentIds] = useState<Set<number>>(new Set(role?.parentRoleIds ?? []));
+  const [permIds, setPermIds] = useState<Set<number>>(
+    new Set(role?.permissionIds ?? [])
+  );
+  const [parentIds, setParentIds] = useState<Set<number>>(
+    new Set(role?.parentRoleIds ?? [])
+  );
+  const [saving, setSaving] = useState(false);
 
   const togglePerm = (id: number) =>
-    setPermIds((s) => { const ns = new Set(s); ns.has(id) ? ns.delete(id) : ns.add(id); return ns; });
+    setPermIds((s) => {
+      const ns = new Set(s);
+      ns.has(id) ? ns.delete(id) : ns.add(id);
+      return ns;
+    });
   const toggleParent = (id: number) =>
-    setParentIds((s) => { const ns = new Set(s); ns.has(id) ? ns.delete(id) : ns.add(id); return ns; });
+    setParentIds((s) => {
+      const ns = new Set(s);
+      ns.has(id) ? ns.delete(id) : ns.add(id);
+      return ns;
+    });
 
   async function save() {
+    setSaving(true);
     try {
       if (isEdit) {
         await updateRole(role!.id, {
@@ -196,7 +241,11 @@ function RoleEditor({
           parentRoleIds: [...parentIds],
         });
       } else {
-        if (!name.trim()) { onError("Nombre requerido"); return; }
+        if (!name.trim()) {
+          onError("Nombre requerido");
+          setSaving(false);
+          return;
+        }
         await createRole({
           name: name.trim(),
           description,
@@ -207,78 +256,97 @@ function RoleEditor({
       onSaved();
     } catch (e) {
       onError(toApiError(e).message);
+    } finally {
+      setSaving(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-30">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-bold">{isEdit ? `Editar ${role!.name}` : "Nuevo rol"}</h2>
-        </div>
-        <div className="p-6 space-y-4">
-          {!isEdit && (
-            <div>
-              <label className="text-sm font-medium">Nombre</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full border border-slate-300 rounded px-2 py-1 mt-1"
-              />
-            </div>
-          )}
-          <div>
-            <label className="text-sm font-medium">Descripcion</label>
+    <Modal
+      open
+      title={isEdit ? `EDITAR · ${role!.name}` : "NUEVO ROL"}
+      onClose={onClose}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={save} loading={saving}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {!isEdit && (
+          <Field label="Nombre" required>
             <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-slate-300 rounded px-2 py-1 mt-1"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="input"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-2">Permisos</label>
-            <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto border rounded p-2 bg-slate-50">
-              {allPermissions.map((p) => (
-                <label key={p.id} className="flex items-center gap-2 text-xs hover:bg-white rounded px-1 py-0.5">
+          </Field>
+        )}
+        <Field label="Descripción">
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <Field label={`Permisos (${permIds.size}/${allPermissions.length})`}>
+          <div className="grid grid-cols-2 gap-1 max-h-72 overflow-y-auto border border-line p-2 bg-ink-900/40">
+            {allPermissions.map((p) => {
+              const checked = permIds.has(p.id);
+              return (
+                <label
+                  key={p.id}
+                  className={`flex items-center gap-2 px-2 py-1 cursor-pointer text-sm transition-colors ${
+                    checked
+                      ? "bg-neon-cyan/10 text-neon-cyan"
+                      : "hover:bg-ink-700"
+                  }`}
+                >
                   <input
                     type="checkbox"
-                    checked={permIds.has(p.id)}
+                    checked={checked}
                     onChange={() => togglePerm(p.id)}
+                    className="accent-neon-cyan"
                   />
-                  <span className="font-mono">{p.code}</span>
+                  <span className="font-mono text-xs">{p.code}</span>
                 </label>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          <div>
-            <label className="text-sm font-medium block mb-2">Roles padre (hereda permisos)</label>
-            <div className="flex flex-wrap gap-2">
-              {allRoles
-                .filter((r) => r.id !== role?.id)
-                .map((r) => (
-                  <label key={r.id} className="flex items-center gap-1 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={parentIds.has(r.id)}
-                      onChange={() => toggleParent(r.id)}
-                    />
-                    {r.name}
-                  </label>
-                ))}
-            </div>
+        </Field>
+
+        <Field label="Roles padre (jerarquía Composite)">
+          <div className="flex flex-wrap gap-2">
+            {allRoles
+              .filter((r) => r.id !== role?.id)
+              .map((r) => {
+                const checked = parentIds.has(r.id);
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => toggleParent(r.id)}
+                    className={`px-2 py-1 border font-mono text-xs uppercase tracking-widest2 transition-colors ${
+                      checked
+                        ? "border-neon-magenta text-neon-magenta bg-neon-magenta/5"
+                        : "border-line text-fg-muted hover:border-neon-magenta/40"
+                    }`}
+                  >
+                    {checked ? "↳" : "+"} {r.name}
+                  </button>
+                );
+              })}
           </div>
-        </div>
-        <div className="p-6 border-t flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm">Cancelar</button>
-          <button
-            onClick={save}
-            className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded text-sm"
-          >
-            Guardar
-          </button>
-        </div>
+        </Field>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -288,66 +356,90 @@ function UsersTab() {
   const rolesQ = useQuery({ queryKey: ["roles"], queryFn: getRoles });
 
   const blockMut = useMutation({
-    mutationFn: ({ id, blocked }: { id: number; blocked: boolean }) => setUserBlocked(id, blocked),
+    mutationFn: ({ id, blocked }: { id: number; blocked: boolean }) =>
+      setUserBlocked(id, blocked),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
   const roleMut = useMutation({
-    mutationFn: ({ userId, roleId }: { userId: number; roleId: number }) => changeUserRole(userId, roleId),
+    mutationFn: ({ userId, roleId }: { userId: number; roleId: number }) =>
+      changeUserRole(userId, roleId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
 
-  if (usersQ.isLoading || rolesQ.isLoading) return <p>Cargando...</p>;
-  if (!usersQ.data || !rolesQ.data) return <p className="text-red-600">Error</p>;
+  if (usersQ.isLoading || rolesQ.isLoading) return <Spinner />;
+  if (!usersQ.data || !rolesQ.data)
+    return <EmptyState icon="⚠" title="Error al cargar" />;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-xs text-slate-500">
-          <tr>
-            <th className="text-left p-3">Usuario</th>
-            <th className="text-left p-3">Rol</th>
-            <th className="text-left p-3">Idioma</th>
-            <th className="text-left p-3">Creado</th>
-            <th className="text-left p-3">Estado</th>
-            <th className="p-3"></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {usersQ.data.map((u) => (
-            <tr key={u.id}>
-              <td className="p-3 font-medium">{u.username}</td>
-              <td className="p-3">
-                <select
-                  value={rolesQ.data!.find((r) => r.name === u.roleName)?.id ?? ""}
-                  onChange={(e) => roleMut.mutate({ userId: u.id, roleId: Number(e.target.value) })}
-                  className="text-sm border border-slate-300 rounded px-2 py-0.5"
-                >
-                  {rolesQ.data!.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              </td>
-              <td className="p-3 font-mono text-xs">{u.languageCode}</td>
-              <td className="p-3 text-xs text-slate-500">{new Date(u.createdAtUtc).toLocaleDateString()}</td>
-              <td className="p-3">
-                {u.isBlocked ? (
-                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Bloqueado</span>
-                ) : (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Activo</span>
-                )}
-              </td>
-              <td className="p-3 text-right">
-                <button
-                  onClick={() => blockMut.mutate({ id: u.id, blocked: !u.isBlocked })}
-                  className="text-xs text-brand-600 hover:underline"
-                >
-                  {u.isBlocked ? "Desbloquear" : "Bloquear"}
-                </button>
-              </td>
+    <Panel padding="none" className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="table-cyber">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Idioma</th>
+              <th>Creado</th>
+              <th>Estado</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {usersQ.data.map((u) => (
+              <tr key={u.id}>
+                <td className="font-display font-semibold">{u.username}</td>
+                <td>
+                  <select
+                    value={
+                      rolesQ.data!.find((r) => r.name === u.roleName)?.id ?? ""
+                    }
+                    onChange={(e) =>
+                      roleMut.mutate({
+                        userId: u.id,
+                        roleId: Number(e.target.value),
+                      })
+                    }
+                    className="input !py-1 !text-xs"
+                  >
+                    {rolesQ.data!.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <Chip tone="muted">{u.languageCode}</Chip>
+                </td>
+                <td className="font-mono text-xs text-fg-muted">
+                  {new Date(u.createdAtUtc).toLocaleDateString()}
+                </td>
+                <td>
+                  {u.isBlocked ? (
+                    <Chip tone="red">BLOQUEADO</Chip>
+                  ) : (
+                    <Chip tone="green">ACTIVO</Chip>
+                  )}
+                </td>
+                <td className="text-right">
+                  <button
+                    onClick={() =>
+                      blockMut.mutate({ id: u.id, blocked: !u.isBlocked })
+                    }
+                    className={`font-mono text-[0.65rem] uppercase tracking-widest2 ${
+                      u.isBlocked
+                        ? "text-neon-green hover:text-glow-cyan"
+                        : "text-neon-red hover:text-glow-magenta"
+                    }`}
+                  >
+                    [{u.isBlocked ? "desbloquear" : "bloquear"}]
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   );
 }
