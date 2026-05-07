@@ -4,7 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VentaGamer.Application.Abstractions;
 using VentaGamer.Application.Auth;
+using VentaGamer.Application.Carts;
+using VentaGamer.Application.Orders;
 using VentaGamer.Application.Products;
+using VentaGamer.Infrastructure.Carts;
+using VentaGamer.Infrastructure.Orders;
 using VentaGamer.Infrastructure.Products;
 using VentaGamer.Domain.Entities;
 using VentaGamer.Infrastructure.Auth;
@@ -37,6 +41,9 @@ public static class DependencyInjection
         services.AddSingleton<JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<ICartService, CartService>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddSingleton<OrderPdfGenerator>();
 
         return services;
     }
