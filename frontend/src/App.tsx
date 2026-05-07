@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { AdminPage } from "./routes/AdminPage";
 import { CartPage } from "./routes/CartPage";
 import { CatalogPage } from "./routes/CatalogPage";
 import { LoginPage } from "./routes/LoginPage";
@@ -28,6 +29,7 @@ function App() {
             <Route path="cart" element={<CartPage />} />
             <Route path="orders" element={<MyOrdersPage />} />
             <Route path="orders/:id" element={<OrderDetailPage />} />
+            <Route path="admin" element={<AdminPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

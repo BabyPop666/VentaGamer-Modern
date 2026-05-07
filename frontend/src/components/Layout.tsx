@@ -59,6 +59,16 @@ export function Layout() {
                 </NavLink>
               </>
             )}
+            {user && (hasPermission("roles.read") || hasPermission("users.register")) && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                }
+              >
+                Admin
+              </NavLink>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             {user ? (
