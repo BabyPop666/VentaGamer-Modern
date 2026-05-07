@@ -11,16 +11,19 @@ export function LanguageSwitcher() {
   });
 
   return (
-    <select
-      value={i18n.language}
-      onChange={(e) => loadLanguage(e.target.value)}
-      className="bg-brand-700 text-white text-xs rounded px-2 py-1 border border-brand-600"
-    >
-      {(langsQ.data ?? [{ code: "es", name: "Espanol" }]).map((l) => (
-        <option key={l.code} value={l.code}>
-          {l.code.toUpperCase()}
-        </option>
-      ))}
-    </select>
+    <div className="hidden sm:flex items-center gap-1.5 font-mono text-[0.6rem] uppercase tracking-widest2 text-fg-muted">
+      <span className="text-neon-cyan">LANG</span>
+      <select
+        value={i18n.language}
+        onChange={(e) => loadLanguage(e.target.value)}
+        className="bg-transparent border border-line hover:border-neon-cyan text-fg px-1.5 py-0.5 text-[0.65rem] font-mono tracking-widest2 cursor-pointer focus:outline-none focus:border-neon-cyan transition-colors"
+      >
+        {(langsQ.data ?? [{ code: "es", name: "Español" }]).map((l) => (
+          <option key={l.code} value={l.code} className="bg-ink-900">
+            {l.code.toUpperCase()}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
