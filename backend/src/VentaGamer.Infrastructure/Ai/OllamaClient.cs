@@ -3,45 +3,80 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using VentaGamer.Application.Ai;
+using VentaGamer.Application.Settings;
 
 namespace VentaGamer.Infrastructure.Ai;
 
 /// <summary>
-/// Cliente para la API de Ollama (https://github.com/ollama/ollama/blob/main/docs/api.md).
-/// Soporta tool calling segun spec /api/chat con "tools" y "stream":true.
+/// Cliente HTTP a Ollama. Lee URL y modelo desde SystemSettings (BD) en cada request,
+/// con fallback a appsettings.json. Permite cambiar la URL en runtime sin reiniciar
+/// (mismo patron que ConfiguracionSistema en InventarioApp).
 /// </summary>
 public class OllamaClient
 {
     private readonly HttpClient _http;
     private readonly OllamaOptions _opts;
+    private readonly ISystemSettingService _settings;
     private readonly ILogger<OllamaClient> _log;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public OllamaClient(HttpClient http, IOptions<OllamaOptions> opts, ILogger<OllamaClient> log)
+    public OllamaClient(HttpClient http, IOptions<OllamaOptions> opts, ISystemSettingService settings, ILogger<OllamaClient> log)
     {
         _http = http;
         _opts = opts.Value;
+        _settings = settings;
         _log = log;
     }
 
-    public async Task<bool> IsAvailableAsync(CancellationToken ct)
+    public async Task<string> GetEffectiveBaseUrlAsync(CancellationToken ct = default)
+        => (await _settings.GetOrDefaultAsync(SettingKeys.AiBaseUrl, _opts.BaseUrl, ct)).TrimEnd('/');
+
+    public async Task<string> GetEffectiveModelAsync(CancellationToken ct = default)
+        => await _settings.GetOrDefaultAsync(SettingKeys.AiModel, _opts.Model, ct);
+
+    public async Task<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         try
         {
-            // Timeout corto: si Ollama no esta corriendo cae rapido sin trabar al usuario.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(2));
-            using var res = await _http.GetAsync("/api/tags", cts.Token);
+            cts.CancelAfter(TimeSpan.FromSeconds(3));
+            var url = await GetEffectiveBaseUrlAsync(ct);
+            using var res = await _http.GetAsync($"{url}/api/tags", cts.Token);
             return res.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _log.LogDebug("Ollama no disponible: {Msg}", ex.Message);
+            return false;
+        }
+    }
+
+    public record TagInfo(string Name, long Size);
+    public record TagsResponse(List<TagInfo> Models);
+
+    public async Task<List<string>?> ListModelsAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            var url = await GetEffectiveBaseUrlAsync(ct);
+            using var res = await _http.GetAsync($"{url}/api/tags", cts.Token);
+            if (!res.IsSuccessStatusCode) return null;
+            var json = await res.Content.ReadAsStringAsync(ct);
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("models", out var arr)) return new();
+            var names = new List<string>();
+            foreach (var m in arr.EnumerateArray())
+                if (m.TryGetProperty("name", out var n) && n.GetString() is { } s) names.Add(s);
+            return names;
+        }
+        catch { return null; }
     }
 
     public record OllamaMessage(string Role, string Content, List<OllamaToolCall>? ToolCalls = null);
     public record OllamaToolCall(OllamaToolFunction Function);
     public record OllamaToolFunction(string Name, JsonElement Arguments);
-
-    /// <summary>Resultado streaming: tokens del contenido + (al final) tool_calls si las pide.</summary>
     public record OllamaChatChunk(string? TokenDelta, OllamaMessage? FinalMessage, bool Done);
 
     public async IAsyncEnumerable<OllamaChatChunk> ChatStreamAsync(
@@ -49,9 +84,12 @@ public class OllamaClient
         IEnumerable<object>? tools,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
+        var url = await GetEffectiveBaseUrlAsync(ct);
+        var model = await GetEffectiveModelAsync(ct);
+
         var payload = new
         {
-            model = _opts.Model,
+            model,
             messages = messages.Select(m => m.ToolCalls is { Count: > 0 }
                 ? (object)new { role = m.Role, content = m.Content, tool_calls = m.ToolCalls }
                 : new { role = m.Role, content = m.Content }),
@@ -60,7 +98,7 @@ public class OllamaClient
             options = new { temperature = _opts.Temperature }
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/chat")
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"{url}/api/chat")
         {
             Content = JsonContent.Create(payload, options: JsonOpts)
         };

@@ -18,10 +18,12 @@ using VentaGamer.Infrastructure.Orders;
 using VentaGamer.Infrastructure.Products;
 using VentaGamer.Domain.Entities;
 using VentaGamer.Application.Ai;
+using VentaGamer.Application.Settings;
 using VentaGamer.Infrastructure.Ai;
 using VentaGamer.Infrastructure.Ai.Tools;
 using VentaGamer.Infrastructure.Auth;
 using VentaGamer.Infrastructure.Persistence;
+using VentaGamer.Infrastructure.Settings;
 
 namespace VentaGamer.Infrastructure;
 
@@ -61,12 +63,14 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
 
+        services.AddScoped<ISystemSettingService, SystemSettingService>();
+
         // AI chat
         services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
         var ollamaOpts = configuration.GetSection(OllamaOptions.SectionName).Get<OllamaOptions>() ?? new OllamaOptions();
+        // Sin BaseAddress fijo: la URL se resuelve dinamicamente desde SystemSettings en cada request.
         services.AddHttpClient<OllamaClient>(c =>
         {
-            c.BaseAddress = new Uri(ollamaOpts.BaseUrl);
             c.Timeout = TimeSpan.FromSeconds(ollamaOpts.TimeoutSeconds);
         });
         services.AddScoped<IAiTool, BuscarProductosTool>();

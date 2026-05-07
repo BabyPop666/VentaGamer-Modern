@@ -20,6 +20,7 @@ public interface IAppDbContext
     DbSet<OrderItem> OrderItems { get; }
     DbSet<AiConversation> AiConversations { get; }
     DbSet<AiMessage> AiMessages { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
