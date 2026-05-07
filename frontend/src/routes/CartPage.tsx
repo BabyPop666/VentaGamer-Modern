@@ -135,7 +135,7 @@ export function CartPage() {
               disabled={checkoutMut.isPending}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-6 py-2 rounded font-medium"
             >
-              {checkoutMut.isPending ? "Procesando..." : "Confirmar compra"}
+              {checkoutMut.isPending ? "Procesando..." : "Confirmar pedido"}
             </button>
           </div>
         </>

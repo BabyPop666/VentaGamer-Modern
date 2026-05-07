@@ -13,9 +13,9 @@ export function MyOrdersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-900">Mis compras</h1>
+      <h1 className="text-2xl font-bold text-brand-900">Mis pedidos</h1>
       {ordersQ.data.length === 0 ? (
-        <p className="text-slate-500 py-8 text-center">No hay compras todavia.</p>
+        <p className="text-slate-500 py-8 text-center">No hay pedidos todavia.</p>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
           {ordersQ.data.map((o) => (

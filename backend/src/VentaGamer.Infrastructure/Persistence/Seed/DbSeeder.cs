@@ -127,24 +127,44 @@ public static class DbSeeder
         var spanish = await db.Languages.FirstAsync(l => l.Code == "es", ct);
         var rolesByName = await db.Roles.ToDictionaryAsync(r => r.Name, ct);
 
-        // Reconciliar: el rol Admin SIEMPRE debe tener todos los permisos del sistema
-        // (super-admin). Idempotente: solo agrega los que faltan.
+        // Reconciliar permisos del rol Admin: gestiona el sistema pero NO compra.
+        // Idempotente: agrega los que faltan, remueve los que sobran.
         if (rolesByName.TryGetValue("Admin", out var adminRoleEntity))
         {
-            var allPermIds = await db.Permissions.Select(p => p.Id).ToListAsync(ct);
-            var adminPermIds = await db.RolePermissions
+            // Permisos que NO corresponden a un admin (son de cliente)
+            var excluded = new HashSet<string> { "cart.use", "orders.read.own" };
+
+            var expectedPermIds = await db.Permissions
+                .Where(p => !excluded.Contains(p.Code))
+                .Select(p => p.Id)
+                .ToListAsync(ct);
+
+            var currentPermIds = await db.RolePermissions
                 .Where(rp => rp.RoleId == adminRoleEntity.Id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync(ct);
 
-            var missing = allPermIds.Except(adminPermIds).ToList();
+            var missing = expectedPermIds.Except(currentPermIds).ToList();
+            var extra = currentPermIds.Except(expectedPermIds).ToList();
+
             if (missing.Count > 0)
             {
                 foreach (var pid in missing)
                     db.RolePermissions.Add(new RolePermission(adminRoleEntity.Id, pid));
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Granted {Count} missing permissions to Admin role", missing.Count);
+                logger.LogInformation("Granted {Count} permissions to Admin role", missing.Count);
             }
+
+            if (extra.Count > 0)
+            {
+                var toRemove = await db.RolePermissions
+                    .Where(rp => rp.RoleId == adminRoleEntity.Id && extra.Contains(rp.PermissionId))
+                    .ToListAsync(ct);
+                db.RolePermissions.RemoveRange(toRemove);
+                logger.LogInformation("Revoked {Count} permissions from Admin role (cart/own-orders are for clients)", extra.Count);
+            }
+
+            if (missing.Count > 0 || extra.Count > 0)
+                await db.SaveChangesAsync(ct);
         }
 
         // Admin (con tratamiento del placeholder hash de etapa 1)

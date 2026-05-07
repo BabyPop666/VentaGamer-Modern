@@ -58,7 +58,7 @@ export function Layout() {
                     isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                   }
                 >
-                  {t("nav.myOrders", "Mis compras")}
+                  {t("nav.myOrders", "Mis pedidos")}
                 </NavLink>
               </>
             )}
@@ -79,12 +79,13 @@ export function Layout() {
                   isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                 }
               >
-                Compras
+                Pedidos
               </NavLink>
             )}
             {user && (hasPermission("roles.read") || hasPermission("users.register")) && (
               <NavLink
                 to="/admin"
+                end
                 className={({ isActive }) =>
                   isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                 }

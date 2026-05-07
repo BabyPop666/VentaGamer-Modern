@@ -22,17 +22,17 @@ export function OrderDetailPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (orderQ.isLoading) return <p className="text-slate-500">Cargando orden...</p>;
-  if (!orderQ.data) return <p className="text-red-600">Orden no encontrada.</p>;
+  if (orderQ.isLoading) return <p className="text-slate-500">Cargando pedido...</p>;
+  if (!orderQ.data) return <p className="text-red-600">Pedido no encontrado.</p>;
 
   const order = orderQ.data;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center bg-green-50 border border-green-200 rounded-xl p-6">
-        <h1 className="text-2xl font-bold text-green-700">¡Compra confirmada!</h1>
+        <h1 className="text-2xl font-bold text-green-700">¡Pedido confirmado!</h1>
         <p className="text-green-600 text-sm mt-1">
-          Orden <span className="font-mono">{order.orderNumber}</span>
+          Pedido <span className="font-mono">{order.orderNumber}</span>
         </p>
       </div>
 

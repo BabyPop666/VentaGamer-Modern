@@ -30,7 +30,7 @@ export function AdminOrdersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-900">Todas las compras</h1>
+      <h1 className="text-2xl font-bold text-brand-900">Todos los pedidos</h1>
 
       <form
         className="flex gap-2"
@@ -64,13 +64,13 @@ export function AdminOrdersPage() {
 
       {ordersQ.isLoading && <p>Cargando...</p>}
       {ordersQ.data && ordersQ.data.length === 0 && (
-        <p className="text-slate-500 text-center py-8">Sin compras</p>
+        <p className="text-slate-500 text-center py-8">Sin pedidos</p>
       )}
 
       {ordersQ.data && ordersQ.data.length > 0 && (
         <>
           <p className="text-xs text-slate-500">
-            {ordersQ.data.length} compras · total $
+            {ordersQ.data.length} pedidos · total $
             {ordersQ.data.reduce((s, o) => s + o.total, 0).toFixed(2)}
           </p>
 
