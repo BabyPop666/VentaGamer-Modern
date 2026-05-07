@@ -79,17 +79,41 @@ export function AiChatWidget() {
 
   return (
     <>
-      {/* Boton flotante */}
+      {/* Boton flotante con alta visibilidad: halo + ring + label */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full font-mono text-sm uppercase tracking-widest2 transition-all ${
-          open
-            ? "bg-neon-magenta text-ink-900 shadow-glow-magenta"
-            : "bg-neon-cyan text-ink-900 shadow-glow-cyan animate-glow-pulse"
+        title={open ? "Cerrar GG" : "Abrir GG · Game Guide"}
+        className={`fixed bottom-6 right-6 z-40 group transition-transform ${
+          open ? "scale-95" : "hover:scale-110"
         }`}
-        title={open ? "Cerrar GG" : "Abrir GG"}
       >
-        {open ? "✕" : "GG"}
+        {!open && (
+          <>
+            <span
+              aria-hidden
+              className="absolute inset-0 -m-4 rounded-full bg-neon-cyan/40 blur-2xl animate-glow-pulse"
+            />
+            <span
+              aria-hidden
+              className="absolute inset-0 -m-2 rounded-full border-2 border-neon-cyan/70 animate-ping"
+            />
+          </>
+        )}
+        <span
+          className={`relative flex items-center justify-center w-16 h-16 rounded-full font-display font-black text-xl tracking-widest2 border-2 ${
+            open
+              ? "bg-neon-magenta text-ink-900 border-neon-magenta shadow-glow-magenta"
+              : "bg-neon-cyan text-ink-900 border-ink-900 shadow-glow-cyan ring-2 ring-neon-cyan/60"
+          }`}
+        >
+          {open ? "✕" : "GG"}
+        </span>
+        {!open && (
+          <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1.5 whitespace-nowrap font-mono text-[0.65rem] uppercase tracking-widest2 bg-ink-800 border border-neon-cyan/40 text-neon-cyan px-3 py-1.5 rounded shadow-panel pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-glow-pulse" />
+            Chat IA · GG
+          </span>
+        )}
       </button>
 
       {/* Panel */}
@@ -138,15 +162,33 @@ export function AiChatWidget() {
           {/* Mensajes */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {!ollamaUp && (
-              <div className="bg-ink-700/50 border border-neon-red/40 rounded-lg p-3 text-xs font-mono">
-                <div className="text-neon-red mb-1">[!] Ollama no esta corriendo</div>
+              <div className="bg-ink-700/50 border border-neon-red/40 rounded-lg p-3 text-xs font-mono space-y-2">
+                <div className="text-neon-red">[!] Ollama no responde</div>
                 <div className="text-fg-muted">
-                  Instalá: <span className="text-neon-cyan">brew install ollama</span>
-                  <br />
-                  Arrancá: <span className="text-neon-cyan">brew services start ollama</span>
-                  <br />
-                  Modelo: <span className="text-neon-cyan">ollama pull qwen2.5:7b</span>
+                  Si Ollama corre en otra PC, configura la URL en{" "}
+                  <a
+                    href="/admin/ai"
+                    onClick={() => setOpen(false)}
+                    className="text-neon-cyan underline hover:text-glow-cyan"
+                  >
+                    Config IA
+                  </a>
+                  .
                 </div>
+                <details>
+                  <summary className="cursor-pointer text-fg-muted hover:text-neon-cyan">
+                    [?] Como instalar Ollama
+                  </summary>
+                  <div className="mt-2 space-y-1 text-fg-dim">
+                    <div>brew install ollama</div>
+                    <div>brew services start ollama</div>
+                    <div>ollama pull qwen2.5:7b</div>
+                    <div className="pt-1">
+                      Para exponerlo a la red: <br />
+                      launchctl setenv OLLAMA_HOST 0.0.0.0:11434
+                    </div>
+                  </div>
+                </details>
               </div>
             )}
 

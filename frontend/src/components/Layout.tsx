@@ -74,6 +74,11 @@ export function Layout() {
         (hasPermission("backup.manage") || hasPermission("integrity.check")),
     },
     {
+      to: "/admin/ai",
+      label: "IA",
+      show: !!user && hasPermission("config.read"),
+    },
+    {
       to: "/config",
       label: "Config",
       show: !!user && hasPermission("config.read"),
