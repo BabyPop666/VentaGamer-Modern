@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { getCart } from "../features/cart/cart.api";
 import { useAuthStore } from "../features/auth/auth.store";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Layout() {
   const { user, logout, hasPermission } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const cartQ = useQuery({
     queryKey: ["cart"],
@@ -32,7 +35,7 @@ export function Layout() {
                 isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
               }
             >
-              Catalogo
+              {t("nav.catalog", "Catalogo")}
             </NavLink>
             {user && hasPermission("cart.use") && (
               <>
@@ -42,7 +45,7 @@ export function Layout() {
                     isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                   }
                 >
-                  Carrito
+                  {t("nav.cart", "Carrito")}
                   {cartCount > 0 && (
                     <span className="ml-1 inline-flex items-center justify-center text-xs bg-orange-400 text-white rounded-full px-1.5">
                       {cartCount}
@@ -55,7 +58,7 @@ export function Layout() {
                     isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                   }
                 >
-                  Mis compras
+                  {t("nav.myOrders", "Mis compras")}
                 </NavLink>
               </>
             )}
@@ -66,7 +69,7 @@ export function Layout() {
                   isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                 }
               >
-                Admin
+                {t("nav.admin", "Administracion")}
               </NavLink>
             )}
             {user && hasPermission("audit.read") && (
@@ -76,15 +79,16 @@ export function Layout() {
                   isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
                 }
               >
-                Bitacora
+                {t("nav.audit", "Bitacora")}
               </NavLink>
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
+            <LanguageSwitcher />
             {user ? (
               <>
                 <span className="text-brand-50">
-                  Hola, <b>{user.username}</b>{" "}
+                  <b>{user.username}</b>{" "}
                   <span className="text-xs opacity-70">({user.roleName})</span>
                 </span>
                 <button
@@ -94,7 +98,7 @@ export function Layout() {
                   }}
                   className="px-3 py-1 rounded bg-brand-700 hover:bg-brand-600"
                 >
-                  Salir
+                  {t("nav.logout", "Salir")}
                 </button>
               </>
             ) : (
@@ -102,7 +106,7 @@ export function Layout() {
                 to="/login"
                 className="px-3 py-1 rounded bg-brand-500 hover:bg-brand-600"
               >
-                Iniciar sesion
+                {t("nav.login", "Iniciar sesion")}
               </Link>
             )}
           </div>
