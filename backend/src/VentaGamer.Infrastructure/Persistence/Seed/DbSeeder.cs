@@ -127,6 +127,26 @@ public static class DbSeeder
         var spanish = await db.Languages.FirstAsync(l => l.Code == "es", ct);
         var rolesByName = await db.Roles.ToDictionaryAsync(r => r.Name, ct);
 
+        // Reconciliar: el rol Admin SIEMPRE debe tener todos los permisos del sistema
+        // (super-admin). Idempotente: solo agrega los que faltan.
+        if (rolesByName.TryGetValue("Admin", out var adminRoleEntity))
+        {
+            var allPermIds = await db.Permissions.Select(p => p.Id).ToListAsync(ct);
+            var adminPermIds = await db.RolePermissions
+                .Where(rp => rp.RoleId == adminRoleEntity.Id)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync(ct);
+
+            var missing = allPermIds.Except(adminPermIds).ToList();
+            if (missing.Count > 0)
+            {
+                foreach (var pid in missing)
+                    db.RolePermissions.Add(new RolePermission(adminRoleEntity.Id, pid));
+                await db.SaveChangesAsync(ct);
+                logger.LogInformation("Granted {Count} missing permissions to Admin role", missing.Count);
+            }
+        }
+
         // Admin (con tratamiento del placeholder hash de etapa 1)
         var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin", ct);
         if (adminUser is null)

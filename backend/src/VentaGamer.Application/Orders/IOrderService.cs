@@ -6,6 +6,7 @@ public interface IOrderService
     Task<OrderDto> CheckoutAsync(int userId, CancellationToken ct = default);
     Task<OrderDto?> GetByIdAsync(int orderId, int requesterUserId, bool includeOthers, CancellationToken ct = default);
     Task<IReadOnlyList<OrderDto>> GetMyOrdersAsync(int userId, CancellationToken ct = default);
+    Task<IReadOnlyList<OrderDto>> GetAllOrdersAsync(string? username, CancellationToken ct = default);
     Task<byte[]> GeneratePdfAsync(int orderId, int requesterUserId, bool includeOthers, CancellationToken ct = default);
 }
 

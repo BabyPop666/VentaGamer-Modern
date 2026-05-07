@@ -82,6 +82,20 @@ public class OrderService : IOrderService
         return orders.Select(MapDto).ToList();
     }
 
+    public async Task<IReadOnlyList<OrderDto>> GetAllOrdersAsync(string? username, CancellationToken ct = default)
+    {
+        var query = _db.Orders.AsNoTracking()
+            .Include(o => o.Items)
+            .Include(o => o.User)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(username))
+            query = query.Where(o => o.User != null && o.User.Username.Contains(username));
+
+        var orders = await query.OrderByDescending(o => o.PlacedAtUtc).ToListAsync(ct);
+        return orders.Select(MapDto).ToList();
+    }
+
     public async Task<byte[]> GeneratePdfAsync(int orderId, int requesterUserId, bool includeOthers, CancellationToken ct = default)
     {
         var dto = await GetByIdAsync(orderId, requesterUserId, includeOthers, ct)

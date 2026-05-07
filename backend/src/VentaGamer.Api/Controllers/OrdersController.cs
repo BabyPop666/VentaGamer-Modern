@@ -33,6 +33,11 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetMine(CancellationToken ct)
         => Ok(await _service.GetMyOrdersAsync(CurrentUserId(), ct));
 
+    [HttpGet]
+    [Authorize(Policy = "orders.read.all")]
+    public async Task<IActionResult> GetAll([FromQuery] string? username, CancellationToken ct)
+        => Ok(await _service.GetAllOrdersAsync(username, ct));
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
