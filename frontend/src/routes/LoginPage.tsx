@@ -8,8 +8,8 @@ export function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("Admin123!");
+  const [username, setUsername] = useState("cliente");
+  const [password, setPassword] = useState("Cliente123!");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,11 +48,51 @@ export function LoginPage() {
         <h1 className="text-2xl font-bold text-brand-900 mb-1">
           Iniciar sesion
         </h1>
-        <p className="text-sm text-slate-500 mb-6">
-          Usa <code className="bg-slate-100 px-1 rounded">admin</code> /{" "}
-          <code className="bg-slate-100 px-1 rounded">Admin123!</code> para
-          probar
-        </p>
+        <div className="text-xs text-slate-500 mb-6 bg-slate-50 border border-slate-200 rounded p-3">
+          <p className="font-semibold text-slate-700 mb-1">Usuarios de prueba</p>
+          <ul className="space-y-0.5 font-mono">
+            <li>
+              <button
+                type="button"
+                onClick={() => { setUsername("cliente"); setPassword("Cliente123!"); }}
+                className="hover:underline text-brand-700"
+              >
+                cliente / Cliente123!
+              </button>{" "}
+              <span className="text-slate-400">(rol User · puede comprar)</span>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => { setUsername("admin"); setPassword("Admin123!"); }}
+                className="hover:underline text-brand-700"
+              >
+                admin / Admin123!
+              </button>{" "}
+              <span className="text-slate-400">(rol Admin)</span>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => { setUsername("webmaster"); setPassword("WebMaster123!"); }}
+                className="hover:underline text-brand-700"
+              >
+                webmaster / WebMaster123!
+              </button>{" "}
+              <span className="text-slate-400">(rol WebMaster)</span>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => { setUsername("tester"); setPassword("Tester123!"); }}
+                className="hover:underline text-brand-700"
+              >
+                tester / Tester123!
+              </button>{" "}
+              <span className="text-slate-400">(rol Tester)</span>
+            </li>
+          </ul>
+        </div>
 
         <label className="block text-sm font-medium mb-1">Usuario</label>
         <input
