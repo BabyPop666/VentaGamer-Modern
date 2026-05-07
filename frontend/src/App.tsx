@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { CartPage } from "./routes/CartPage";
 import { CatalogPage } from "./routes/CatalogPage";
 import { LoginPage } from "./routes/LoginPage";
+import { MyOrdersPage } from "./routes/MyOrdersPage";
+import { OrderDetailPage } from "./routes/OrderDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +25,9 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<CatalogPage />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="cart" element={<CartPage />} />
+            <Route path="orders" element={<MyOrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

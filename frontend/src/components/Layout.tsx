@@ -1,9 +1,21 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { getCart } from "../features/cart/cart.api";
 import { useAuthStore } from "../features/auth/auth.store";
 
 export function Layout() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, hasPermission } = useAuthStore();
   const navigate = useNavigate();
+
+  const cartQ = useQuery({
+    queryKey: ["cart"],
+    queryFn: getCart,
+    enabled: !!user && hasPermission("cart.use"),
+    refetchInterval: false,
+  });
+
+  const cartCount =
+    cartQ.data?.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
 
   return (
     <div className="min-h-full flex flex-col">
@@ -22,6 +34,31 @@ export function Layout() {
             >
               Catalogo
             </NavLink>
+            {user && hasPermission("cart.use") && (
+              <>
+                <NavLink
+                  to="/cart"
+                  className={({ isActive }) =>
+                    isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                  }
+                >
+                  Carrito
+                  {cartCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center text-xs bg-orange-400 text-white rounded-full px-1.5">
+                      {cartCount}
+                    </span>
+                  )}
+                </NavLink>
+                <NavLink
+                  to="/orders"
+                  className={({ isActive }) =>
+                    isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                  }
+                >
+                  Mis compras
+                </NavLink>
+              </>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             {user ? (
@@ -57,7 +94,7 @@ export function Layout() {
       </main>
 
       <footer className="bg-slate-100 text-slate-500 text-xs py-3 text-center">
-        VentaGamer · Modernizacion · Etapa 3
+        VentaGamer · Modernizacion · Etapa 4
       </footer>
     </div>
   );

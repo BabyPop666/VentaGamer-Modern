@@ -1,12 +1,44 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { addItem } from "../features/cart/cart.api";
 import { getCategories, getProducts } from "../features/products/product.api";
+import { useAuthStore } from "../features/auth/auth.store";
+import { toApiError } from "../lib/api";
 
 export function CatalogPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const user = useAuthStore((s) => s.user);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const addMut = useMutation({
+    mutationFn: ({ productId }: { productId: number }) => addItem(productId, 1),
+    onSuccess: (cart) => {
+      queryClient.setQueryData(["cart"], cart);
+      setFeedback({ ok: true, msg: "Agregado al carrito" });
+      setTimeout(() => setFeedback(null), 2500);
+    },
+    onError: (err) => {
+      setFeedback({ ok: false, msg: toApiError(err).message });
+      setTimeout(() => setFeedback(null), 4000);
+    },
+  });
+
+  function handleAddToCart(productId: number) {
+    if (!user) { navigate("/login"); return; }
+    if (!hasPermission("cart.use")) {
+      setFeedback({ ok: false, msg: "Tu rol no puede comprar" });
+      return;
+    }
+    addMut.mutate({ productId });
+  }
 
   const productsQuery = useQuery({
     queryKey: ["products", { page, search, category }],
@@ -64,6 +96,18 @@ export function CatalogPage() {
         </form>
       </div>
 
+      {feedback && (
+        <div
+          className={`fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-sm z-20 ${
+            feedback.ok
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {feedback.msg}
+        </div>
+      )}
+
       {productsQuery.isLoading && <p className="text-slate-500">Cargando...</p>}
 
       {productsQuery.isError && (
@@ -107,6 +151,13 @@ export function CatalogPage() {
                   {p.stock > 0 ? `${p.stock} en stock` : "Sin stock"}
                 </span>
               </div>
+              <button
+                disabled={p.stock === 0 || addMut.isPending}
+                onClick={() => handleAddToCart(p.id)}
+                className="w-full mt-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white py-1.5 rounded text-sm font-medium"
+              >
+                Agregar al carrito
+              </button>
             </div>
           </article>
         ))}
