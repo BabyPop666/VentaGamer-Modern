@@ -18,6 +18,8 @@ public interface IAppDbContext
     DbSet<CartItem> CartItems { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
+    DbSet<AiConversation> AiConversations { get; }
+    DbSet<AiMessage> AiMessages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
