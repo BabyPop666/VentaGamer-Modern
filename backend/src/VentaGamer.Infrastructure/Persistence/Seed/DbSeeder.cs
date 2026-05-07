@@ -136,5 +136,36 @@ public static class DbSeeder
                 logger.LogWarning("Rehashed admin password from placeholder to PBKDF2 (default '{Pwd}')", DefaultAdminPassword);
             }
         }
+
+        if (!await db.Products.AnyAsync(ct))
+        {
+            var demoProducts = new[]
+            {
+                new Product("PlayStation 5 Slim", "Consolas", 899.99m, 12, "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=600"),
+                new Product("Xbox Series X", "Consolas", 849.99m, 8, "https://images.unsplash.com/photo-1621259182978-fbf93132d53d?w=600"),
+                new Product("Nintendo Switch OLED", "Consolas", 549.99m, 20, "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=600"),
+                new Product("DualSense PS5", "Mandos", 79.99m, 50, "https://images.unsplash.com/photo-1606318546408-b2eb59f3a30b?w=600"),
+                new Product("Xbox Wireless Controller", "Mandos", 64.99m, 45, "https://images.unsplash.com/photo-1592890288564-76628a30a657?w=600"),
+                new Product("Logitech G Pro X", "Auriculares", 129.99m, 30, "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600"),
+                new Product("HyperX Cloud II", "Auriculares", 99.99m, 40, "https://images.unsplash.com/photo-1599669454699-248893623440?w=600"),
+                new Product("Razer Viper V2 Pro", "Mouse", 149.99m, 25, "https://images.unsplash.com/photo-1527814050087-3793815479db?w=600"),
+                new Product("Logitech G502 Hero", "Mouse", 49.99m, 60, "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600"),
+                new Product("Corsair K70 RGB", "Teclados", 169.99m, 18, "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600"),
+                new Product("Keychron K2", "Teclados", 89.99m, 22, "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600"),
+                new Product("LG UltraGear 27GP850", "Monitores", 449.99m, 7, "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600"),
+                new Product("Samsung Odyssey G7", "Monitores", 699.99m, 5, "https://images.unsplash.com/photo-1547119957-637f8679db1e?w=600"),
+                new Product("Secretlab Titan Evo", "Sillas", 549.99m, 10, "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600"),
+                new Product("DXRacer King K99", "Sillas", 399.99m, 15, "https://images.unsplash.com/photo-1610555356070-d0efb6505f81?w=600"),
+                new Product("Elgato Stream Deck MK.2", "Streaming", 159.99m, 14, "https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=600"),
+                new Product("Blue Yeti X", "Streaming", 169.99m, 16, "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600"),
+                new Product("EA Sports FC 25", "Juegos", 69.99m, 100, "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=600"),
+                new Product("Hogwarts Legacy", "Juegos", 49.99m, 35, "https://images.unsplash.com/photo-1580234811497-9df7fd2f357e?w=600"),
+                new Product("Cyberpunk 2077", "Juegos", 39.99m, 28, "https://images.unsplash.com/photo-1604361948742-6cb3a07c3d4d?w=600"),
+            };
+
+            db.Products.AddRange(demoProducts);
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Seeded {Count} demo products", demoProducts.Length);
+        }
     }
 }

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VentaGamer.Application.Abstractions;
 using VentaGamer.Application.Auth;
+using VentaGamer.Application.Products;
+using VentaGamer.Infrastructure.Products;
 using VentaGamer.Domain.Entities;
 using VentaGamer.Infrastructure.Auth;
 using VentaGamer.Infrastructure.Persistence;
@@ -34,6 +36,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
         services.AddSingleton<JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProductService, ProductService>();
 
         return services;
     }
