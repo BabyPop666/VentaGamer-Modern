@@ -18,39 +18,43 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto> CheckoutAsync(int userId, CancellationToken ct = default)
     {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        var cart = await _db.Carts.FirstOrDefaultAsync(c => c.UserId == userId, ct)
-                   ?? throw new EmptyCartException();
-
-        var items = await _db.CartItems
-            .Where(i => i.CartId == cart.Id)
-            .Include(i => i.Product)
-            .ToListAsync(ct);
-
-        if (items.Count == 0) throw new EmptyCartException();
-
-        // Validar stock + descontar
-        foreach (var i in items)
+        var strategy = _db.Database.CreateExecutionStrategy();
+        var orderId = await strategy.ExecuteAsync(async () =>
         {
-            if (i.Product.Stock < i.Quantity)
-                throw new InvalidOperationException($"Stock insuficiente de '{i.Product.Title}'");
-            i.Product.AdjustStock(-i.Quantity);
-        }
+            await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        var orderItems = items.Select(i =>
-            new OrderItem(i.ProductId, i.Product.Title, i.Product.Price, i.Quantity)).ToList();
+            var cart = await _db.Carts.FirstOrDefaultAsync(c => c.UserId == userId, ct)
+                       ?? throw new EmptyCartException();
 
-        var order = new Order(userId, orderItems);
-        _db.Orders.Add(order);
+            var items = await _db.CartItems
+                .Where(i => i.CartId == cart.Id)
+                .Include(i => i.Product)
+                .ToListAsync(ct);
 
-        // Vaciar carrito
-        _db.CartItems.RemoveRange(items);
+            if (items.Count == 0) throw new EmptyCartException();
 
-        await _db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+            foreach (var i in items)
+            {
+                if (i.Product.Stock < i.Quantity)
+                    throw new InvalidOperationException($"Stock insuficiente de '{i.Product.Title}'");
+                i.Product.AdjustStock(-i.Quantity);
+            }
 
-        return await BuildDtoAsync(order.Id, ct);
+            var orderItems = items.Select(i =>
+                new OrderItem(i.ProductId, i.Product.Title, i.Product.Price, i.Quantity)).ToList();
+
+            var order = new Order(userId, orderItems);
+            _db.Orders.Add(order);
+
+            _db.CartItems.RemoveRange(items);
+
+            await _db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return order.Id;
+        });
+
+        return await BuildDtoAsync(orderId, ct);
     }
 
     public async Task<OrderDto?> GetByIdAsync(int orderId, int requesterUserId, bool includeOthers, CancellationToken ct = default)
