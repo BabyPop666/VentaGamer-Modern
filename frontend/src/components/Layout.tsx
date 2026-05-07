@@ -82,6 +82,16 @@ export function Layout() {
                 {t("nav.audit", "Bitacora")}
               </NavLink>
             )}
+            {user && (hasPermission("backup.manage") || hasPermission("integrity.check")) && (
+              <NavLink
+                to="/maintenance"
+                className={({ isActive }) =>
+                  isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                }
+              >
+                Mantenimiento
+              </NavLink>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             <LanguageSwitcher />

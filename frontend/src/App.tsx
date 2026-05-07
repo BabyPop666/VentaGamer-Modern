@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { AdminPage } from "./routes/AdminPage";
 import { AuditPage } from "./routes/AuditPage";
+import { MaintenancePage } from "./routes/MaintenancePage";
 import { CartPage } from "./routes/CartPage";
 import { CatalogPage } from "./routes/CatalogPage";
 import { LoginPage } from "./routes/LoginPage";
@@ -32,6 +33,7 @@ function App() {
             <Route path="orders/:id" element={<OrderDetailPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="audit" element={<AuditPage />} />
+            <Route path="maintenance" element={<MaintenancePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

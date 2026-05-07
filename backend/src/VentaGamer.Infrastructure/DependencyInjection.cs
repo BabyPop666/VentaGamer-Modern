@@ -6,7 +6,9 @@ using VentaGamer.Application.Abstractions;
 using VentaGamer.Application.Auth;
 using VentaGamer.Application.Admin;
 using VentaGamer.Application.Audit;
+using VentaGamer.Application.Maintenance;
 using VentaGamer.Infrastructure.Audit;
+using VentaGamer.Infrastructure.Maintenance;
 using VentaGamer.Application.Carts;
 using VentaGamer.Infrastructure.Admin;
 using VentaGamer.Application.Orders;
@@ -54,6 +56,7 @@ public static class DependencyInjection
         services.AddSingleton<OrderPdfGenerator>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IMaintenanceService, MaintenanceService>();
 
         return services;
     }
