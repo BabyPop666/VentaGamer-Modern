@@ -82,17 +82,42 @@ Abrir http://localhost:5173 → debería mostrar la card con el resultado del he
 | Frontend | http://localhost:5173 | Card "VentaGamer · etapa 0" con health verde |
 | CORS | F12 → Network en frontend | Sin errores CORS |
 
-## Etapas siguientes
+## Etapas
+
+Todas las etapas están **completadas y funcionales**:
 
 | # | Etapa | Estado |
 |---|---|---|
 | 0 | Setup monorepo + Docker SQL Server | ✅ |
-| 1 | EF Core + DbContext + Migration inicial | ⏳ |
-| 2 | Auth: Identity + JWT (PBKDF2) | ⏳ |
-| 3 | API Productos + Frontend catálogo | ⏳ |
-| 4 | Carrito + checkout + PDF | ⏳ |
-| 5 | Roles + Permisos + ABMperfiles | ⏳ |
-| 6 | Bitácora con interceptor EF | ⏳ |
-| 7 | Multi-idioma (i18next + BD) | ⏳ |
-| 8 | Backup/Restore + integridad | ⏳ |
-| 9 | Hardening + Deploy docker-compose | ⏳ |
+| 1 | EF Core + DbContext + Migration inicial | ✅ |
+| 2 | Auth: Identity + JWT (PBKDF2) | ✅ |
+| 3 | API Productos + Frontend catálogo + Login | ✅ |
+| 4 | Carrito + checkout transaccional + PDF (QuestPDF) | ✅ |
+| 5 | Roles + Permisos + ABMperfiles UI | ✅ |
+| 6 | Bitácora con SaveChangesInterceptor | ✅ |
+| 7 | Multi-idioma (i18next + BD, es/en/pt) | ✅ |
+| 8 | Backup/Restore + integridad HMAC-SHA256 | ✅ |
+| 9 | Hardening (rate limit) + Deploy compose | ✅ |
+
+## Deploy con Docker Compose (todo en uno)
+
+```bash
+cd modernizacion
+cp .env.example .env       # editar JWT_SIGNING_KEY
+docker compose up -d       # construye + levanta backend + frontend + BD
+```
+
+Una vez listo:
+- Frontend: http://localhost:8080
+- Backend Swagger: http://localhost:5050/swagger
+- BD: localhost:1434
+
+## Usuarios demo (creados por DbSeeder)
+
+| Usuario | Password | Rol | Caso de uso |
+|---|---|---|---|
+| `admin` | `Admin123!` | Admin | Productos + roles |
+| `cliente` | `Cliente123!` | User | Comprar (carrito + checkout) |
+| `juan` | `Juan123!` | User | Comprar |
+| `webmaster` | `WebMaster123!` | WebMaster | Bitácora + Backups |
+| `tester` | `Tester123!` | Tester | Mix QA |

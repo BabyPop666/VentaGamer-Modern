@@ -4,18 +4,45 @@ services:
     container_name: ventagamer-sql
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "VentaGamer2024!"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-VentaGamer2024!}"
       MSSQL_PID: "Developer"
     ports:
       - "1434:1433"
     volumes:
       - sqldata:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'VentaGamer2024!' -C -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ventagamer-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=VentaGamer;User Id=sa;Password=${MSSQL_SA_PASSWORD:-VentaGamer2024!};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      Jwt__Issuer: "VentaGamer.Api"
+      Jwt__Audience: "VentaGamer.Frontend"
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:-CHANGE_ME_dev-only-32-character-key-please}"
+      Jwt__AccessTokenMinutes: "60"
+    ports:
+      - "5050:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ventagamer-web
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
 
 volumes:
   sqldata:
