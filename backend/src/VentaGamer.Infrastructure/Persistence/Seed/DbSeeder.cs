@@ -161,6 +161,38 @@ public static class DbSeeder
         }
         await db.SaveChangesAsync(ct);
 
+        if (!await db.Translations.AnyAsync(ct))
+        {
+            var byCode = await db.Languages.ToDictionaryAsync(l => l.Code, ct);
+            var entries = new (string Key, string Es, string En, string Pt)[]
+            {
+                ("nav.catalog",    "Catalogo",        "Catalog",       "Catalogo"),
+                ("nav.cart",       "Carrito",         "Cart",          "Carrinho"),
+                ("nav.myOrders",   "Mis compras",     "My orders",     "Minhas compras"),
+                ("nav.admin",      "Administracion",  "Admin",         "Administracao"),
+                ("nav.audit",      "Bitacora",        "Audit log",     "Auditoria"),
+                ("nav.login",      "Iniciar sesion",  "Sign in",       "Entrar"),
+                ("nav.logout",     "Salir",           "Sign out",      "Sair"),
+                ("catalog.search", "Buscar",          "Search",        "Buscar"),
+                ("catalog.empty",  "No hay productos", "No products",   "Sem produtos"),
+                ("cart.confirm",   "Confirmar compra", "Confirm",       "Confirmar"),
+                ("cart.empty",     "Tu carrito esta vacio", "Your cart is empty", "Carrinho vazio"),
+                ("cart.total",     "Total",           "Total",         "Total"),
+                ("cart.addToCart", "Agregar al carrito", "Add to cart", "Adicionar"),
+                ("orders.placed",  "Compra confirmada", "Order placed", "Compra confirmada"),
+                ("orders.downloadPdf", "Descargar comprobante PDF", "Download PDF", "Baixar PDF"),
+            };
+
+            foreach (var (key, es, en, pt) in entries)
+            {
+                if (byCode.TryGetValue("es", out var l1)) db.Translations.Add(new Translation(l1.Id, key, es));
+                if (byCode.TryGetValue("en", out var l2)) db.Translations.Add(new Translation(l2.Id, key, en));
+                if (byCode.TryGetValue("pt", out var l3)) db.Translations.Add(new Translation(l3.Id, key, pt));
+            }
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Seeded {Count} translation entries x 3 languages", entries.Length);
+        }
+
         if (!await db.Products.AnyAsync(ct))
         {
             var demoProducts = new[]
