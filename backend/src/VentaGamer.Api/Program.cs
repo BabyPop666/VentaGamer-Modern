@@ -1,3 +1,5 @@
+using VentaGamer.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 const string CorsPolicyName = "FrontendDev";
@@ -12,6 +14,8 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
