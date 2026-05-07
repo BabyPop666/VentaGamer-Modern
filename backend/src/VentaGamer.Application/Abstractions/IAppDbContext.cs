@@ -14,6 +14,10 @@ public interface IAppDbContext
     DbSet<Language> Languages { get; }
     DbSet<Translation> Translations { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<Cart> Carts { get; }
+    DbSet<CartItem> CartItems { get; }
+    DbSet<Order> Orders { get; }
+    DbSet<OrderItem> OrderItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

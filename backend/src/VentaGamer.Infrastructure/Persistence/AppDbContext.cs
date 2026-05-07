@@ -17,6 +17,10 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Translation> Translations => Set<Translation>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
