@@ -63,7 +63,12 @@ public static class DependencyInjection
 
         // AI chat
         services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
-        services.AddHttpClient<OllamaClient>();
+        var ollamaOpts = configuration.GetSection(OllamaOptions.SectionName).Get<OllamaOptions>() ?? new OllamaOptions();
+        services.AddHttpClient<OllamaClient>(c =>
+        {
+            c.BaseAddress = new Uri(ollamaOpts.BaseUrl);
+            c.Timeout = TimeSpan.FromSeconds(ollamaOpts.TimeoutSeconds);
+        });
         services.AddScoped<IAiTool, BuscarProductosTool>();
         services.AddScoped<IAiTool, ConsultarStockTool>();
         services.AddScoped<IAiTool, ListarCategoriasTool>();
@@ -72,12 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IAiTool, KpisAdminTool>();
         services.AddScoped<IAiTool, TopProductosTool>();
         services.AddScoped<IAiTool, PedidosRecientesTool>();
-        // ListarCapacidades necesita el resolver inyectado en runtime
-        services.AddScoped<IAiTool>(sp =>
-        {
-            var registry = sp.GetRequiredService<AiToolRegistry>();
-            return new ListarCapacidadesTool(ctx => registry.GetAvailableTools(ctx));
-        });
+        services.AddScoped<IAiTool, ListarCapacidadesTool>();
         services.AddScoped<AiToolRegistry>();
         services.AddScoped<IAiChatService, AiChatService>();
 

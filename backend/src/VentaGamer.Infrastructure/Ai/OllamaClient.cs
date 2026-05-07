@@ -22,15 +22,16 @@ public class OllamaClient
         _http = http;
         _opts = opts.Value;
         _log = log;
-        _http.BaseAddress = new Uri(_opts.BaseUrl);
-        _http.Timeout = TimeSpan.FromSeconds(_opts.TimeoutSeconds);
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken ct)
     {
         try
         {
-            using var res = await _http.GetAsync("/api/tags", ct);
+            // Timeout corto: si Ollama no esta corriendo cae rapido sin trabar al usuario.
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(2));
+            using var res = await _http.GetAsync("/api/tags", cts.Token);
             return res.IsSuccessStatusCode;
         }
         catch { return false; }
