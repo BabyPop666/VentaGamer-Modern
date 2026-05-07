@@ -4,7 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VentaGamer.Application.Abstractions;
 using VentaGamer.Application.Auth;
+using VentaGamer.Application.Admin;
 using VentaGamer.Application.Carts;
+using VentaGamer.Infrastructure.Admin;
 using VentaGamer.Application.Orders;
 using VentaGamer.Application.Products;
 using VentaGamer.Infrastructure.Carts;
@@ -44,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddSingleton<OrderPdfGenerator>();
+        services.AddScoped<IAdminService, AdminService>();
 
         return services;
     }

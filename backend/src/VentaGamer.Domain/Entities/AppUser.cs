@@ -38,6 +38,12 @@ public class AppUser : EntityBase
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void ChangeRole(int roleId)
+    {
+        RoleId = roleId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void Block() { IsBlocked = true; UpdatedAtUtc = DateTime.UtcNow; }
     public void Unblock() { IsBlocked = false; FailedLoginAttempts = 0; UpdatedAtUtc = DateTime.UtcNow; }
     public void RegisterSuccessfulLogin()
