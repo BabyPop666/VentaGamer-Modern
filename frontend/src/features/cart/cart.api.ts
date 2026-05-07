@@ -25,6 +25,9 @@ export const getOrder = async (id: number): Promise<Order> =>
 export const getMyOrders = async (): Promise<Order[]> =>
   (await api.get<Order[]>("/orders/mine")).data;
 
+export const getAllOrders = async (username?: string): Promise<Order[]> =>
+  (await api.get<Order[]>("/orders", { params: { username } })).data;
+
 export const downloadOrderPdf = async (id: number): Promise<Blob> => {
   const res = await api.get(`/orders/${id}/pdf`, { responseType: "blob" });
   return res.data as Blob;

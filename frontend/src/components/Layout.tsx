@@ -62,6 +62,26 @@ export function Layout() {
                 </NavLink>
               </>
             )}
+            {user && hasPermission("products.write") && (
+              <NavLink
+                to="/admin/products"
+                className={({ isActive }) =>
+                  isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                }
+              >
+                Productos
+              </NavLink>
+            )}
+            {user && hasPermission("orders.read.all") && (
+              <NavLink
+                to="/admin/orders"
+                className={({ isActive }) =>
+                  isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                }
+              >
+                Compras
+              </NavLink>
+            )}
             {user && (hasPermission("roles.read") || hasPermission("users.register")) && (
               <NavLink
                 to="/admin"

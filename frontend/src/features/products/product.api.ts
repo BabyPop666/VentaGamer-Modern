@@ -22,3 +22,32 @@ export async function getProduct(id: number): Promise<Product> {
   const { data } = await api.get<Product>(`/products/${id}`);
   return data;
 }
+
+export type ProductCreateRequest = {
+  title: string;
+  category: string;
+  price: number;
+  stock: number;
+  imageUrl?: string | null;
+};
+
+export type ProductUpdateRequest = {
+  title: string;
+  category: string;
+  price: number;
+  imageUrl?: string | null;
+};
+
+export async function createProduct(req: ProductCreateRequest): Promise<Product> {
+  const { data } = await api.post<Product>("/products", req);
+  return data;
+}
+
+export async function updateProduct(id: number, req: ProductUpdateRequest): Promise<Product> {
+  const { data } = await api.put<Product>(`/products/${id}`, req);
+  return data;
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  await api.delete(`/products/${id}`);
+}
