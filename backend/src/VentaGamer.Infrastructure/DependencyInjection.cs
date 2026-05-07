@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using VentaGamer.Application.Abstractions;
 using VentaGamer.Application.Auth;
 using VentaGamer.Application.Admin;
+using VentaGamer.Application.Audit;
+using VentaGamer.Infrastructure.Audit;
 using VentaGamer.Application.Carts;
 using VentaGamer.Infrastructure.Admin;
 using VentaGamer.Application.Orders;
@@ -27,13 +29,17 @@ public static class DependencyInjection
         var connStr = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default no configurado.");
 
-        services.AddDbContext<AppDbContext>(opts =>
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AuditSaveChangesInterceptor>();
+
+        services.AddDbContext<AppDbContext>((sp, opts) =>
         {
             opts.UseSqlServer(connStr, sql =>
             {
                 sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                 sql.EnableRetryOnFailure(maxRetryCount: 3);
             });
+            opts.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
@@ -47,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderService, OrderService>();
         services.AddSingleton<OrderPdfGenerator>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IAuditService, AuditService>();
 
         return services;
     }
