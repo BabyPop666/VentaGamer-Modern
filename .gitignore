@@ -31,3 +31,6 @@ sqldata/
 
 # Logs
 *.log
+
+# Documentacion privada (no subir a GitHub)
+CLAUDE.md
