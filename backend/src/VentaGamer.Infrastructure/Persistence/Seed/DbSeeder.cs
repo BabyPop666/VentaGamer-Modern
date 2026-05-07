@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using VentaGamer.Domain.Entities;
@@ -63,7 +64,9 @@ public static class DbSeeder
         ("pt", "Portugues"),
     };
 
-    public static async Task SeedAsync(AppDbContext db, ILogger logger, CancellationToken ct = default)
+    public const string DefaultAdminPassword = "Admin123!";
+
+    public static async Task SeedAsync(AppDbContext db, ILogger logger, IPasswordHasher<AppUser> hasher, CancellationToken ct = default)
     {
         await db.Database.MigrateAsync(ct);
 
@@ -113,15 +116,25 @@ public static class DbSeeder
 
         if (!await db.Users.AnyAsync(ct))
         {
-            // Etapa 1: hash placeholder. Etapa 2 lo reemplazara con PBKDF2 (Identity).
-            const string placeholderHash = "PENDING_IDENTITY_MIGRATION";
-
             var adminRole = await db.Roles.FirstAsync(r => r.Name == "Admin", ct);
             var spanish = await db.Languages.FirstAsync(l => l.Code == "es", ct);
 
-            db.Users.Add(new AppUser("admin", placeholderHash, adminRole.Id, spanish.Id));
+            var admin = new AppUser("admin", "", adminRole.Id, spanish.Id);
+            admin.ChangePassword(hasher.HashPassword(admin, DefaultAdminPassword));
+            db.Users.Add(admin);
             await db.SaveChangesAsync(ct);
-            logger.LogInformation("Seeded admin user (placeholder hash; will be replaced in Etapa 2)");
+            logger.LogWarning("Seeded admin user with default password '{Pwd}' - cambialo en produccion", DefaultAdminPassword);
+        }
+        else
+        {
+            // Si quedo el hash placeholder de Etapa 1, lo rehashea con PBKDF2
+            var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin", ct);
+            if (adminUser is not null && adminUser.PasswordHash == "PENDING_IDENTITY_MIGRATION")
+            {
+                adminUser.ChangePassword(hasher.HashPassword(adminUser, DefaultAdminPassword));
+                await db.SaveChangesAsync(ct);
+                logger.LogWarning("Rehashed admin password from placeholder to PBKDF2 (default '{Pwd}')", DefaultAdminPassword);
+            }
         }
     }
 }
