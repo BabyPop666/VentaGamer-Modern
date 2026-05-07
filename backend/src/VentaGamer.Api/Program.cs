@@ -1,4 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
 using VentaGamer.Infrastructure;
+using VentaGamer.Infrastructure.Persistence;
+using VentaGamer.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +28,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+    await DbSeeder.SeedAsync(db, logger);
+}
 
 if (app.Environment.IsDevelopment())
 {
