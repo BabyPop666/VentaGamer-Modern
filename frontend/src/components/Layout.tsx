@@ -69,6 +69,16 @@ export function Layout() {
                 Admin
               </NavLink>
             )}
+            {user && hasPermission("audit.read") && (
+              <NavLink
+                to="/audit"
+                className={({ isActive }) =>
+                  isActive ? "font-semibold underline" : "opacity-80 hover:opacity-100"
+                }
+              >
+                Bitacora
+              </NavLink>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             {user ? (
