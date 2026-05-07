@@ -45,7 +45,17 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Una policy por permiso del catalogo
+    string[] perms = {
+        "products.read","products.write","cart.use","orders.read.own","orders.read.all",
+        "users.register","roles.read","roles.write","audit.read","backup.manage",
+        "integrity.check","config.read"
+    };
+    foreach (var p in perms)
+        options.AddPolicy(p, b => b.RequireClaim("permission", p));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
