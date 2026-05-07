@@ -17,6 +17,9 @@ using VentaGamer.Infrastructure.Carts;
 using VentaGamer.Infrastructure.Orders;
 using VentaGamer.Infrastructure.Products;
 using VentaGamer.Domain.Entities;
+using VentaGamer.Application.Ai;
+using VentaGamer.Infrastructure.Ai;
+using VentaGamer.Infrastructure.Ai.Tools;
 using VentaGamer.Infrastructure.Auth;
 using VentaGamer.Infrastructure.Persistence;
 
@@ -57,6 +60,26 @@ public static class DependencyInjection
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
+
+        // AI chat
+        services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
+        services.AddHttpClient<OllamaClient>();
+        services.AddScoped<IAiTool, BuscarProductosTool>();
+        services.AddScoped<IAiTool, ConsultarStockTool>();
+        services.AddScoped<IAiTool, ListarCategoriasTool>();
+        services.AddScoped<IAiTool, MisPedidosTool>();
+        services.AddScoped<IAiTool, DetallePedidoTool>();
+        services.AddScoped<IAiTool, KpisAdminTool>();
+        services.AddScoped<IAiTool, TopProductosTool>();
+        services.AddScoped<IAiTool, PedidosRecientesTool>();
+        // ListarCapacidades necesita el resolver inyectado en runtime
+        services.AddScoped<IAiTool>(sp =>
+        {
+            var registry = sp.GetRequiredService<AiToolRegistry>();
+            return new ListarCapacidadesTool(ctx => registry.GetAvailableTools(ctx));
+        });
+        services.AddScoped<AiToolRegistry>();
+        services.AddScoped<IAiChatService, AiChatService>();
 
         return services;
     }

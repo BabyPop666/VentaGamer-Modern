@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using VentaGamer.Api.Hubs;
 using VentaGamer.Application.Auth;
 using VentaGamer.Infrastructure;
 using VentaGamer.Infrastructure.Persistence;
@@ -48,7 +49,20 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOpts.SigningKey)),
             ClockSkew = TimeSpan.FromSeconds(30),
         };
+        // SignalR no puede mandar Authorization header en WebSocket: aceptamos token via querystring
+        opts.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    ctx.Token = token;
+                return Task.CompletedTask;
+            }
+        };
     });
+
+builder.Services.AddSignalR();
 
 // Rate limiting: 60 req/min global + 5/min en endpoints sensibles de auth
 builder.Services.AddRateLimiter(options =>
@@ -136,5 +150,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<AiChatHub>("/hubs/ai").DisableRateLimiting();
 
 app.Run();
