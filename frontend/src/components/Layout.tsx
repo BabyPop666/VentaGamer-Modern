@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { AiChatWidget } from "../features/ai/AiChatWidget";
 import { getCart } from "../features/cart/cart.api";
 import { useAuthStore } from "../features/auth/auth.store";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -223,6 +224,9 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+
+      {/* GG · AI Chat overlay (visible solo si el user esta autenticado) */}
+      <AiChatWidget />
 
       {/* Footer */}
       <footer className="relative mt-16 border-t border-line">
