@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using VentaGamer.Infrastructure.Persistence;
 
 namespace VentaGamer.Api.Controllers;
 
@@ -6,12 +8,26 @@ namespace VentaGamer.Api.Controllers;
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
+    private readonly AppDbContext _db;
+    public HealthController(AppDbContext db) => _db = db;
+
     [HttpGet]
-    public IActionResult Get() => Ok(new
+    public async Task<IActionResult> Get(CancellationToken ct)
     {
-        status = "ok",
-        service = "VentaGamer.Api",
-        version = "0.1.0-etapa0",
-        timestamp = DateTime.UtcNow
-    });
+        var dbOk = false;
+        string? dbError = null;
+        try { dbOk = await _db.Database.CanConnectAsync(ct); }
+        catch (Exception ex) { dbError = ex.Message; }
+
+        var status = dbOk ? "ok" : "degraded";
+
+        return Ok(new
+        {
+            status,
+            service = "VentaGamer.Api",
+            version = "1.0.0",
+            timestamp = DateTime.UtcNow,
+            checks = new { database = dbOk ? "ok" : (dbError ?? "fail") }
+        });
+    }
 }
