@@ -54,9 +54,13 @@ public class AiChatService : IAiChatService
         var owns = await _db.AiConversations.AnyAsync(c => c.Id == conversationId && c.UserId == userId, ct);
         if (!owns) throw new AiConversationNotFoundException();
 
+        // No devolver assistants intermedios (los que solo contienen tool_calls):
+        // el LLM persiste un assistant por cada round del tool-calling loop, pero el usuario
+        // solo deberia ver la respuesta final (la que NO tiene ToolCallsJson).
         return await _db.AiMessages.AsNoTracking()
             .Where(m => m.ConversationId == conversationId
-                        && (m.Role == AiMessageRole.User || m.Role == AiMessageRole.Assistant))
+                        && (m.Role == AiMessageRole.User
+                            || (m.Role == AiMessageRole.Assistant && m.ToolCallsJson == null)))
             .OrderBy(m => m.CreatedAtUtc)
             .Select(m => new AiMessageDto(m.Id, m.Role.ToString().ToLowerInvariant(), m.Content, m.ToolName, m.CreatedAtUtc))
             .ToListAsync(ct);
