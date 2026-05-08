@@ -76,12 +76,12 @@ export function Layout() {
     {
       to: "/admin/ai",
       label: "IA",
-      show: !!user && hasPermission("config.read"),
+      show: !!user && hasPermission("roles.write"),
     },
     {
       to: "/config",
       label: "Config",
-      show: !!user && hasPermission("config.read"),
+      show: !!user && hasPermission("profile.read"),
     },
     { to: "/help", label: "Ayuda", show: true },
   ];

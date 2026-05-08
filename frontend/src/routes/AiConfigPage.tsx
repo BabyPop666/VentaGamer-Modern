@@ -24,7 +24,7 @@ export function AiConfigPage() {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  const canRead = hasPermission("config.read");
+  const canRead = hasPermission("roles.write");
   const canWrite = hasPermission("roles.write");
 
   if (!canRead) {

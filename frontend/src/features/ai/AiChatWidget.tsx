@@ -19,6 +19,7 @@ import { useAiChat } from "./useAiChat";
  */
 export function AiChatWidget() {
   const user = useAuthStore((s) => s.user);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
   const [open, setOpen] = useState(false);
   const [activeConvoId, setActiveConvoId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
@@ -73,7 +74,7 @@ export function AiChatWidget() {
     }
   }, [open, user, convosQ.data, activeConvoId, qc]);
 
-  if (!user) return null;
+  if (!user || !hasPermission("chat.use")) return null;
 
   const ollamaUp = statusQ.data?.available ?? false;
 

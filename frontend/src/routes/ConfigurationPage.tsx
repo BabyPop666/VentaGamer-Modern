@@ -18,7 +18,7 @@ export function ConfigurationPage() {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
-  if (!hasPermission("config.read")) {
+  if (!hasPermission("profile.read")) {
     return (
       <EmptyState
         icon="⊘"
