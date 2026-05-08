@@ -103,16 +103,17 @@ public static class DbSeeder
         // Reconciliar catalogo de permisos:
         // 1) Migracion historica: si existe 'config.read' y NO existe 'profile.read', se renombra.
         // 2) Agregar permisos faltantes del catalogo (idempotente).
-        var existing = await db.Permissions.ToDictionaryAsync(p => p.Code, ct);
+        var existing = await db.Permissions.AsNoTracking().ToDictionaryAsync(p => p.Code, ct);
 
         if (existing.TryGetValue("config.read", out var legacyConfigRead) && !existing.ContainsKey("profile.read"))
         {
-            // Renombrar in-place preserva el ID y los RolePermissions asociados.
             await db.Database.ExecuteSqlRawAsync(
                 "UPDATE Permissions SET Code = {0}, Description = {1} WHERE Id = {2}",
                 "profile.read", "Ver perfil propio (idioma, ayuda)", legacyConfigRead.Id);
             logger.LogInformation("Migrated permission 'config.read' -> 'profile.read' (id={Id})", legacyConfigRead.Id);
-            existing = await db.Permissions.ToDictionaryAsync(p => p.Code, ct);
+            // Limpiar tracker para que la siguiente lectura no devuelva el cache viejo.
+            db.ChangeTracker.Clear();
+            existing = await db.Permissions.AsNoTracking().ToDictionaryAsync(p => p.Code, ct);
         }
 
         var addedPerm = false;
