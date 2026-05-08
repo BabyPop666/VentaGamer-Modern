@@ -55,7 +55,7 @@ public class AiChatController : ControllerBase
     public record UpdateAiConfigRequest(string? BaseUrl, string? Model);
 
     [HttpGet("config")]
-    [Authorize(Policy = "config.read")]
+    [Authorize(Policy = "roles.write")]
     public async Task<IActionResult> GetConfig(
         [FromServices] OllamaClient ollama,
         CancellationToken ct)
@@ -90,7 +90,7 @@ public class AiChatController : ControllerBase
     }
 
     [HttpPost("config/test")]
-    [Authorize(Policy = "config.read")]
+    [Authorize(Policy = "roles.write")]
     public async Task<IActionResult> TestConnection(
         [FromBody] UpdateAiConfigRequest req,
         [FromServices] OllamaClient ollama,

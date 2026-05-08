@@ -6,7 +6,7 @@ using VentaGamer.Application.Ai;
 
 namespace VentaGamer.Api.Hubs;
 
-[Authorize]
+[Authorize(Policy = "chat.use")]
 public class AiChatHub : Hub
 {
     private readonly IAiChatService _ai;

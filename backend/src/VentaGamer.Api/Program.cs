@@ -96,7 +96,7 @@ builder.Services.AddAuthorization(options =>
     string[] perms = {
         "products.read","products.write","cart.use","orders.read.own","orders.read.all",
         "users.register","roles.read","roles.write","audit.read","backup.manage",
-        "integrity.check","config.read"
+        "integrity.check","profile.read","chat.use"
     };
     foreach (var p in perms)
         options.AddPolicy(p, b => b.RequireClaim("permission", p));
