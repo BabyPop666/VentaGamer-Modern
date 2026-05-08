@@ -7,21 +7,22 @@ namespace VentaGamer.Infrastructure.Persistence.Seed;
 
 public static class DbSeeder
 {
-    // Permisos canónicos del sistema (basado en el legacy ABMperfiles)
+    // Permisos canónicos del sistema.
     public static readonly (string Code, string Description)[] PermissionsCatalog =
     {
         ("products.read", "Ver catalogo de productos"),
         ("products.write", "Crear / editar / eliminar productos"),
         ("cart.use", "Usar el carrito y comprar"),
-        ("orders.read.own", "Ver compras propias"),
-        ("orders.read.all", "Ver compras de todos los usuarios"),
-        ("users.register", "Registrar nuevos usuarios"),
+        ("orders.read.own", "Ver pedidos propios"),
+        ("orders.read.all", "Ver pedidos de todos los usuarios"),
+        ("users.register", "Listar y registrar usuarios"),
         ("roles.read", "Ver roles y permisos"),
         ("roles.write", "Crear / editar / eliminar roles y permisos"),
         ("audit.read", "Consultar bitacora"),
         ("backup.manage", "Crear / restaurar backups"),
         ("integrity.check", "Validar integridad de datos"),
-        ("config.read", "Ver configuracion del sistema"),
+        ("profile.read", "Ver perfil propio (idioma, ayuda)"),
+        ("chat.use", "Usar el chat IA (GG)"),
     };
 
     public static readonly (string Name, string Description, string[] Permissions)[] RolesCatalog =
@@ -29,31 +30,40 @@ public static class DbSeeder
         ("Admin", "Administrador del sistema", new[]
         {
             "products.read", "products.write",
+            "orders.read.all",
             "users.register",
             "roles.read", "roles.write",
-            "config.read",
+            "audit.read",
+            "backup.manage", "integrity.check",
+            "profile.read", "chat.use",
         }),
-        ("WebMaster", "Mantenimiento tecnico y bitacora", new[]
+        ("WebMaster", "Mantenimiento tecnico", new[]
         {
+            "products.read",
+            "orders.read.all",       // ← nuevo: para diagnostico
+            "users.register",         // ← nuevo: para correlacionar bitacora con usuarios
             "audit.read",
             "backup.manage",
             "integrity.check",
-            "config.read",
+            "profile.read", "chat.use",
         }),
         ("User", "Cliente final", new[]
         {
             "products.read",
             "cart.use",
             "orders.read.own",
-            "config.read",
+            "profile.read", "chat.use",
         }),
-        ("Tester", "QA / pruebas", new[]
+        ("Tester", "QA / pruebas (read-only total)", new[]
         {
             "products.read",
             "cart.use",
+            "orders.read.own", "orders.read.all",  // ← nuevo: ve los suyos y los de todos
+            "users.register",                       // ← nuevo: ve listas
             "roles.read",
             "audit.read",
-            "config.read",
+            "integrity.check",                      // ← nuevo: puede verificar integridad
+            "profile.read", "chat.use",
         }),
     };
 
@@ -90,12 +100,33 @@ public static class DbSeeder
             logger.LogInformation("Seeded {Count} languages", LanguagesCatalog.Length);
         }
 
-        if (!await db.Permissions.AnyAsync(ct))
+        // Reconciliar catalogo de permisos:
+        // 1) Migracion historica: si existe 'config.read' y NO existe 'profile.read', se renombra.
+        // 2) Agregar permisos faltantes del catalogo (idempotente).
+        var existing = await db.Permissions.ToDictionaryAsync(p => p.Code, ct);
+
+        if (existing.TryGetValue("config.read", out var legacyConfigRead) && !existing.ContainsKey("profile.read"))
         {
-            foreach (var (code, desc) in PermissionsCatalog)
-                db.Permissions.Add(new Permission(code, desc));
+            // Renombrar in-place preserva el ID y los RolePermissions asociados.
+            await db.Database.ExecuteSqlRawAsync(
+                "UPDATE Permissions SET Code = {0}, Description = {1} WHERE Id = {2}",
+                "profile.read", "Ver perfil propio (idioma, ayuda)", legacyConfigRead.Id);
+            logger.LogInformation("Migrated permission 'config.read' -> 'profile.read' (id={Id})", legacyConfigRead.Id);
+            existing = await db.Permissions.ToDictionaryAsync(p => p.Code, ct);
+        }
+
+        var addedPerm = false;
+        foreach (var (code, desc) in PermissionsCatalog)
+        {
+            if (existing.ContainsKey(code)) continue;
+            db.Permissions.Add(new Permission(code, desc));
+            addedPerm = true;
+            logger.LogInformation("Adding new permission: {Code}", code);
+        }
+        if (addedPerm)
+        {
+            await db.SaveChangesAsync(ct);
             changed = true;
-            logger.LogInformation("Seeded {Count} permissions", PermissionsCatalog.Length);
         }
 
         if (changed)
@@ -127,40 +158,40 @@ public static class DbSeeder
         var spanish = await db.Languages.FirstAsync(l => l.Code == "es", ct);
         var rolesByName = await db.Roles.ToDictionaryAsync(r => r.Name, ct);
 
-        // Reconciliar permisos del rol Admin: gestiona el sistema pero NO compra.
-        // Idempotente: agrega los que faltan, remueve los que sobran.
-        if (rolesByName.TryGetValue("Admin", out var adminRoleEntity))
+        // Reconciliar permisos de TODOS los roles del catalogo segun RolesCatalog.
+        // Idempotente: por cada rol, agrega los permisos faltantes y remueve los que sobran.
+        var permsByCode = await db.Permissions.ToDictionaryAsync(p => p.Code, ct);
+        foreach (var (roleName, _, expectedCodes) in RolesCatalog)
         {
-            // Permisos que NO corresponden a un admin (son de cliente)
-            var excluded = new HashSet<string> { "cart.use", "orders.read.own" };
+            if (!rolesByName.TryGetValue(roleName, out var role)) continue;
 
-            var expectedPermIds = await db.Permissions
-                .Where(p => !excluded.Contains(p.Code))
-                .Select(p => p.Id)
-                .ToListAsync(ct);
+            var expectedIds = expectedCodes
+                .Select(c => permsByCode.TryGetValue(c, out var p) ? p.Id : 0)
+                .Where(id => id > 0)
+                .ToHashSet();
 
-            var currentPermIds = await db.RolePermissions
-                .Where(rp => rp.RoleId == adminRoleEntity.Id)
+            var currentIds = await db.RolePermissions
+                .Where(rp => rp.RoleId == role.Id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync(ct);
 
-            var missing = expectedPermIds.Except(currentPermIds).ToList();
-            var extra = currentPermIds.Except(expectedPermIds).ToList();
+            var missing = expectedIds.Except(currentIds).ToList();
+            var extra = currentIds.Except(expectedIds).ToList();
 
             if (missing.Count > 0)
             {
                 foreach (var pid in missing)
-                    db.RolePermissions.Add(new RolePermission(adminRoleEntity.Id, pid));
-                logger.LogInformation("Granted {Count} permissions to Admin role", missing.Count);
+                    db.RolePermissions.Add(new RolePermission(role.Id, pid));
+                logger.LogInformation("[{Role}] Granted {Count} permissions", roleName, missing.Count);
             }
 
             if (extra.Count > 0)
             {
                 var toRemove = await db.RolePermissions
-                    .Where(rp => rp.RoleId == adminRoleEntity.Id && extra.Contains(rp.PermissionId))
+                    .Where(rp => rp.RoleId == role.Id && extra.Contains(rp.PermissionId))
                     .ToListAsync(ct);
                 db.RolePermissions.RemoveRange(toRemove);
-                logger.LogInformation("Revoked {Count} permissions from Admin role (cart/own-orders are for clients)", extra.Count);
+                logger.LogInformation("[{Role}] Revoked {Count} permissions", roleName, extra.Count);
             }
 
             if (missing.Count > 0 || extra.Count > 0)
