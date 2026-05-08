@@ -10,6 +10,12 @@ export default defineConfig({
         target: "http://localhost:5050",
         changeOrigin: true,
       },
+      // SignalR usa WebSocket: necesita ws:true para que Vite tunelee el upgrade.
+      "/hubs": {
+        target: "http://localhost:5050",
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 });
