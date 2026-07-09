@@ -22,8 +22,6 @@ Esta carpeta reúne la **documentación técnica de entrega** del Trabajo Práct
 
 La documentación está dividida en varios documentos Markdown para facilitar su lectura y edición. Todos los diagramas están escritos en [Mermaid](https://mermaid.js.org/), por lo que pueden editarse como texto y se renderizan automáticamente en GitHub, VS Code y la mayoría de los visores de Markdown.
 
-> La carpeta `docs/` del repositorio contiene material interno de desarrollo y no forma parte de esta entrega.
-
 ## Índice de documentos
 
 | # | Documento | Contenido |

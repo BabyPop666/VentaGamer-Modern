@@ -1,123 +1,90 @@
-# Venta Gamer — Modernización
+# VentaGamer
 
-Migración progresiva del proyecto ASP.NET WebForms (.NET Framework 4.8) a un stack moderno cross-platform que corre nativo en macOS.
+Plataforma web de **comercio electrónico de productos gaming**: catálogo, carrito, checkout con comprobante PDF, administración de usuarios con roles y permisos, auditoría, respaldos de base de datos y asistente virtual con IA.
 
-> El proyecto **legacy** sigue intacto en la raíz del repo. Esta carpeta vive en paralelo y se construye etapa por etapa.
+Trabajo Práctico Integrador — **Desarrollo y Arquitecturas Web** (UAI).
 
-📄 **Plan completo en PDF:** [`docs/Plan_Modernizacion.pdf`](docs/Plan_Modernizacion.pdf)
+📄 **Documentación técnica de entrega:** [`Documentos técnicos/`](Documentos%20técnicos/) (Markdown + PDFs en [`Documentos técnicos/PDFs/`](Documentos%20técnicos/PDFs/))
 
 ## Stack
 
-- **Backend:** .NET 8 LTS · ASP.NET Core Web API · Clean Architecture (4 proyectos)
+- **Backend:** .NET 8 · ASP.NET Core Web API · Clean Architecture
 - **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS
-- **Base de datos:** SQL Server 2022 en Docker (puerto host **1434**)
-- **Próximas etapas:** EF Core 8, Identity + JWT, TanStack Query, QuestPDF, i18next
+- **Base de datos:** SQL Server 2022 (Docker)
+- **Auth:** ASP.NET Identity + JWT
+- **Extras:** EF Core, QuestPDF, i18next, backups HMAC-SHA256, chatbot con Ollama
 
 ## Estructura
 
 ```
-modernizacion/
-├── docker-compose.yml          # SQL Server 2022
-├── docs/Plan_Modernizacion.pdf # Plan completo (10 etapas)
+VentaGamer-Modern/
+├── docker-compose.yml       # Stack completo (web, API, SQL Server, Ollama)
+├── levantar.sh              # Levantar todo con un comando
+├── setup-docker.sh          # Preparación inicial de Docker (una vez)
+├── Documentos técnicos/     # Documentación del TP integrador
 ├── backend/
 │   ├── VentaGamer.sln
-│   ├── global.json             # fija .NET 8.0.417
 │   └── src/
-│       ├── VentaGamer.Api/             # Web API + Controllers
-│       ├── VentaGamer.Application/     # Use cases / DTOs
-│       ├── VentaGamer.Domain/          # Entities / VOs
-│       └── VentaGamer.Infrastructure/  # EF Core / Identity / repos
-└── frontend/                   # Vite + React + TS
-    ├── src/App.tsx             # health check del backend
-    └── vite.config.ts          # proxy /api → :5050
+│       ├── VentaGamer.Api/
+│       ├── VentaGamer.Application/
+│       ├── VentaGamer.Domain/
+│       └── VentaGamer.Infrastructure/
+└── frontend/                # SPA React + Vite
 ```
 
-## Cómo levantar todo (etapa 0)
+## Cómo levantar el sistema (recomendado)
 
-Necesitás **.NET 8 SDK**, **Node 20+**, **Docker Desktop**.
-
-### 1. Base de datos (SQL Server)
+Requisito: **Docker** con Compose v2.
 
 ```bash
-cd modernizacion
-docker compose up -d sqlserver
+# Una sola vez (permisos Docker + .env)
+sudo ./setup-docker.sh
+newgrp docker   # o cerrar y reabrir la sesión
 
-# Verificación
-docker exec ventagamer-sql /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'VentaGamer2024!' -C -Q "SELECT @@VERSION"
+# Levantar todo (build + BD + API + frontend + Ollama)
+./levantar.sh
 ```
 
-Puerto host: `1434`. Usuario: `sa`. Password: `VentaGamer2024!`.
+La primera ejecución puede tardar varios minutos (imágenes, compilación y descarga del modelo de IA ~2 GB).
 
-> En Apple Silicon corre vía Rosetta (Microsoft no publica imagen ARM nativa). Funciona, solo un poco más lento al arrancar.
+| Servicio | URL |
+|---|---|
+| **Aplicación web** | http://localhost:8080 |
+| API (Swagger) | http://localhost:5050/swagger |
+| Health check | http://localhost:5050/api/health |
+| SQL Server | `localhost,1434` (usuario `sa`) |
+| Ollama | http://localhost:11434 |
 
-### 2. Backend
+Al arrancar, la API aplica las migraciones de EF Core y carga los datos demo (usuarios, roles, productos, traducciones).
 
-```bash
-cd backend
-dotnet restore
-dotnet run --project src/VentaGamer.Api
-```
+## Usuarios demo
 
-Abrir http://localhost:5050/swagger → debería mostrar el endpoint `GET /api/health`.
-
-### 3. Frontend
-
-```bash
-cd frontend
-npm install   # solo la primera vez
-npm run dev
-```
-
-Abrir http://localhost:5173 → debería mostrar la card con el resultado del health check verde.
-
-## Validación de la etapa 0
-
-| Check | URL / comando | Resultado esperado |
-|---|---|---|
-| BD activa | `docker ps` | `ventagamer-sql` healthy |
-| BD acepta queries | `sqlcmd -S localhost,1434 ...` | `Microsoft SQL Server 2022` |
-| Backend Swagger | http://localhost:5050/swagger | UI de Swagger |
-| Backend health | http://localhost:5050/api/health | `{"status":"ok",...}` |
-| Frontend | http://localhost:5173 | Card "VentaGamer · etapa 0" con health verde |
-| CORS | F12 → Network en frontend | Sin errores CORS |
-
-## Etapas
-
-Todas las etapas están **completadas y funcionales**:
-
-| # | Etapa | Estado |
-|---|---|---|
-| 0 | Setup monorepo + Docker SQL Server | ✅ |
-| 1 | EF Core + DbContext + Migration inicial | ✅ |
-| 2 | Auth: Identity + JWT (PBKDF2) | ✅ |
-| 3 | API Productos + Frontend catálogo + Login | ✅ |
-| 4 | Carrito + checkout transaccional + PDF (QuestPDF) | ✅ |
-| 5 | Roles + Permisos + ABMperfiles UI | ✅ |
-| 6 | Bitácora con SaveChangesInterceptor | ✅ |
-| 7 | Multi-idioma (i18next + BD, es/en/pt) | ✅ |
-| 8 | Backup/Restore + integridad HMAC-SHA256 | ✅ |
-| 9 | Hardening (rate limit) + Deploy compose | ✅ |
-
-## Deploy con Docker Compose (todo en uno)
-
-```bash
-cd modernizacion
-cp .env.example .env       # editar JWT_SIGNING_KEY
-docker compose up -d       # construye + levanta backend + frontend + BD
-```
-
-Una vez listo:
-- Frontend: http://localhost:8080
-- Backend Swagger: http://localhost:5050/swagger
-- BD: localhost:1434
-
-## Usuarios demo (creados por DbSeeder)
-
-| Usuario | Password | Rol | Caso de uso |
+| Usuario | Contraseña | Rol | Uso típico |
 |---|---|---|---|
-| `admin` | `Admin123!` | Admin | Productos + roles |
-| `cliente` | `Cliente123!` | User | Comprar (carrito + checkout) |
-| `juan` | `Juan123!` | User | Comprar |
-| `webmaster` | `WebMaster123!` | WebMaster | Bitácora + Backups |
-| `tester` | `Tester123!` | Tester | Mix QA |
+| `cliente` | `Cliente123!` | Cliente | Catálogo, carrito, checkout, chat IA |
+| `admin` | `Admin123!` | Admin | Productos, usuarios, roles |
+| `webmaster` | `WebMaster123!` | WebMaster | Bitácora y backups |
+| `juan` | `Juan123!` | Cliente | Segundo cliente de prueba |
+| `tester` | `Tester123!` | Tester | Perfil mixto de consulta |
+
+## Desarrollo local (opcional)
+
+Si preferís correr servicios por separado en lugar de Docker:
+
+```bash
+docker compose up -d sqlserver ollama
+cd backend && dotnet run --project src/VentaGamer.Api
+cd frontend && npm install && npm run dev
+```
+
+- Frontend en desarrollo: http://localhost:5173 (proxy a la API en `:5050`)
+- Detalle completo: [`Documentos técnicos/11-ejecucion.md`](Documentos%20técnicos/11-ejecucion.md)
+
+## Comandos útiles
+
+```bash
+docker compose ps
+docker compose logs -f
+docker compose down        # detener (datos persisten)
+docker compose down -v     # detener y borrar volúmenes
+```

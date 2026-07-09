@@ -249,7 +249,7 @@ export function MaintenancePage() {
 
           <p className="font-mono text-[0.65rem] text-fg-dim border-t border-line pt-3">
             ALG :: <code className="text-neon-magenta">HMAC-SHA256</code> ·
-            reemplaza el sistema legacy DVH/DVV
+            verificación de integridad de filas críticas
           </p>
         </Panel>
       )}

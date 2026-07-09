@@ -28,7 +28,7 @@ const FAQ = [
   },
   {
     q: "¿Por qué se cierra mi sesión sola?",
-    a: "El JWT dura 60 minutos. En la próxima etapa se va a sumar refresh token automático.",
+    a: "El JWT dura 60 minutos. Cuando expire, volvé a iniciar sesión.",
   },
 ];
 

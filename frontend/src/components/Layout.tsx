@@ -243,7 +243,7 @@ export function Layout() {
             </div>
             <p className="text-fg-muted text-xs font-mono mt-2 leading-relaxed">
               ARCADE GEAR · CONSOLES · GAMES <br />
-              Modernizacion etapa 10 · 2026
+              TP Integrador · UAI · 2026
             </p>
           </div>
           <div>
