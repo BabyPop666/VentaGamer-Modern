@@ -17,12 +17,28 @@ services:
       retries: 10
       start_period: 30s
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ventagamer-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   backend:
     build:
       context: ./backend
     container_name: ventagamer-api
     depends_on:
       sqlserver:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: "Production"
@@ -32,6 +48,8 @@ services:
       Jwt__Audience: "VentaGamer.Frontend"
       Jwt__SigningKey: "${JWT_SIGNING_KEY:-CHANGE_ME_dev-only-32-character-key-please}"
       Jwt__AccessTokenMinutes: "60"
+      Ollama__BaseUrl: "http://ollama:11434"
+      Ollama__Model: "${OLLAMA_MODEL:-qwen2.5:3b}"
     ports:
       - "5050:8080"
 
@@ -46,3 +64,4 @@ services:
 
 volumes:
   sqldata:
+  ollamadata:

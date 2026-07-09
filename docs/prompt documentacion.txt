@@ -1,0 +1,40 @@
+Bueno necesito que trabajemos en la "carpeta" del proyecto. 
+me refiero a carpeta, por toda la documentacion que debe acompañar al proyecto. al principio fue una "modernizacion". ahora lo que necesito es que nos olvidemos de la modernizacion. vamos a tomar el proyecto @TP Integrador/VentaGamer-Modern como proyecto base, vamos a intentar documentar todo lo necesario. 
+
+primero leé la documentacion que tenemos: @TP Integrador/VentaGamer-Modern/docs y tambien @TP Integrador/VentaGamer-Modern/README.md  y tambien@TP Integrador/Trabajo Práctico Integrador.html 
+en este archivo, @TP Integrador/Trabajo Práctico Integrador.html tenemos las consignas del trabajo practico. ahi dentro están los lineamientos de la documentacion que necesitamos. 
+tenemos que hacer foco en esto: 
+Documento técnico
+
+Problema y temática
+Arquitectura
+APIs
+Base de datos
+Calidad
+Normativa
+(Opcional) Chatbot
+
+pero es importante que tengamos algunos diagramas claves, como el diagrama de clases (principalmente las Entidades, para representar como están modelado el sistema), un DER de la base de datos, arquitectura de la solucion (tanto a nivel docker, y despues el frontend y el backend un nivel más profundo)
+
+me parece importante tambien agregar algun tipo de seccion con una explicacion del stack (puede estar acompañando a la arquitectura) explicando cual es el stack utilizado, qué rol cumple cada componente del stack, y una descripcion de la tecnologia para entenderlo. 
+
+despues mucho foco en los casos de uso principales. necesito una descripcion de los casos de uso detallada, con los escenarios, actores, objetivo, precondiciones, todo bien completo.
+
+obviamente para entender todo el funcionamiento del sistema necesito que leas todo el codigo del repositorio. no salgamos de este repo: @TP Integrador/VentaGamer-Modern ya que todo lo que necesitamos está ahi. 
+
+fijate en la parte del final del documento, la "rubrica" donde tenemos 
+Semana
+¿Qué deben hacer en clase?
+¿Qué se evalúa?
+
+todo eso es lo que el profesor se va a fijar y es lo que tiene que estar cubierto en la documentacion. 
+
+quiero que la documentacion no esté en un solo archivo gigante. que sean varios archivos, idealmente formato MD para poder editarlos. tambien que tengan los diagramas necesarios via codigo para poder editarlos de ser necesario. 
+
+y no lo pongas en la carpeta DOC. creá una carpeta que se llame "Documentos técnicos" y que ahi esté todo. vamos a dejar la carpeta "doc" como algo más interno para los devs, no como documentacion pensada para entregar al profesor. 
+
+siempre todo redactado con un nivel academico, pero tampoco el extremo de super super profesional y técnico. algo facil de leer y de entender, pero lo suficientemente formal y academico para la entrega del trabajo practico de la facultad. 
+
+tambien me interesa que en la documentacion haya una explicacion de como ejecutar el proyecto. 
+
+haceme todas las preguntas que necesites antes de arrancar. y luego comenzamos. 
