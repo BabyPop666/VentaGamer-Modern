@@ -1,0 +1,255 @@
+/* VentaGamer — Estilos para documentación PDF */
+
+@page {
+  size: A4;
+  margin: 22mm 18mm 24mm 18mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: #1a1a1a;
+  max-width: 100%;
+}
+
+/* Títulos */
+h1 {
+  color: #632634;
+  font-size: 22pt;
+  font-weight: 700;
+  margin: 0 0 0.6em;
+  padding-bottom: 0.35em;
+  border-bottom: 3px solid #632634;
+  page-break-after: avoid;
+}
+
+h2 {
+  color: #632634;
+  font-size: 14pt;
+  font-weight: 600;
+  margin: 1.6em 0 0.5em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid #d4b8be;
+  page-break-after: avoid;
+}
+
+h3 {
+  color: #4a1c28;
+  font-size: 11.5pt;
+  font-weight: 600;
+  margin: 1.2em 0 0.4em;
+  page-break-after: avoid;
+}
+
+h4 {
+  color: #333;
+  font-size: 10.5pt;
+  font-weight: 600;
+  margin: 1em 0 0.3em;
+}
+
+/* Párrafos y listas */
+p {
+  margin: 0.5em 0 0.8em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+ul, ol {
+  margin: 0.4em 0 0.8em;
+  padding-left: 1.4em;
+}
+
+li {
+  margin: 0.25em 0;
+}
+
+/* Tablas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0 1.2em;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+thead th {
+  background: #632634;
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid #632634;
+}
+
+tbody td {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  vertical-align: top;
+}
+
+tbody tr:nth-child(even) {
+  background: #faf6f7;
+}
+
+tbody tr:hover {
+  background: #f3ecee;
+}
+
+/* Código */
+code {
+  font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
+  font-size: 8.5pt;
+  background: #f4f0f1;
+  color: #632634;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+pre {
+  background: #1e1e2e;
+  color: #e8e8e8;
+  padding: 12px 14px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 8pt;
+  line-height: 1.45;
+  margin: 0.8em 0 1.2em;
+  page-break-inside: avoid;
+  border-left: 4px solid #632634;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Citas y notas */
+blockquote {
+  margin: 1em 0;
+  padding: 10px 16px;
+  border-left: 4px solid #632634;
+  background: #faf6f7;
+  color: #444;
+  font-style: italic;
+}
+
+blockquote p {
+  margin: 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #d4b8be;
+  margin: 1.5em 0;
+}
+
+/* Enlaces */
+a {
+  color: #632634;
+  text-decoration: none;
+}
+
+/* Diagramas Mermaid renderizados — deben caber en una sola página */
+.diagram {
+  text-align: center;
+  margin: 1em 0 1.2em;
+  padding: 10px;
+  background: #fafafa;
+  border: 1px solid #e8e0e2;
+  border-radius: 8px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diagram img,
+.diagram svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 600px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Salto de página explícito (casos de uso) */
+.page-break {
+  page-break-before: always;
+  break-before: page;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Casos de uso: cada CU en página nueva (refuerzo vía h2) */
+h2.cu-section {
+  page-break-before: always;
+  break-before: page;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Navegación MD (ocultar en PDF) */
+.nav-footer {
+  display: none;
+}
+
+/* Portada */
+.cover-page {
+  page-break-after: always;
+  text-align: center;
+  padding-top: 30mm;
+}
+
+.cover-page .logo {
+  width: 220px;
+  margin-bottom: 25mm;
+}
+
+.cover-page h1 {
+  border: none;
+  font-size: 26pt;
+  margin-bottom: 0.2em;
+}
+
+.cover-page .subtitle {
+  font-size: 14pt;
+  color: #632634;
+  margin-bottom: 15mm;
+}
+
+.cover-page .meta {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+  font-size: 11pt;
+  line-height: 1.8;
+}
+
+.cover-page .meta strong {
+  color: #632634;
+  display: inline-block;
+  min-width: 140px;
+}
+
+/* Salto de documento en PDF combinado */
+.doc-break {
+  page-break-before: always;
+}
+
+.doc-break:first-child {
+  page-break-before: auto;
+}

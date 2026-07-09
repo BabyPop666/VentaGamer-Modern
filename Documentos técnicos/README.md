@@ -8,9 +8,11 @@
 | **Materia** | Desarrollo y Arquitecturas Web |
 | **Trabajo** | Trabajo Práctico Integrador |
 | **Sistema** | VentaGamer — Plataforma web de venta de productos gaming |
-| **Profesor/a** | _[completar]_ |
-| **Integrantes** | _[completar]_ |
-| **Fecha de entrega** | _[completar]_ |
+| **Profesor/a** | Escandell Gustavo Emanuel |
+| **Integrantes** | Fazzari, Franco Tomás · Mastromarino, Nicolás · Reser, Iván Leonel |
+| **Fecha de entrega** | 09/07/2026 |
+
+> **Versión PDF:** los documentos también están disponibles en la carpeta [`PDFs/`](PDFs/) (generados con `pdf-build/generar-pdfs.mjs`).
 
 ---
 
